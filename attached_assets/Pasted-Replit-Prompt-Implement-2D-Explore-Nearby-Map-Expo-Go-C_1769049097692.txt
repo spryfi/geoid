@@ -1,0 +1,106 @@
+Replit Prompt: Implement 2D "Explore Nearby" Map (Expo Go Compatible)
+
+Objective: Implement the "Explore Nearby" screen using the existing react-native-maps library to ensure it works perfectly in Expo Go. The focus is on creating a functional and informative 2D map that highlights the Balcones Escarpment and nearby geological Points of Interest (POIs).
+
+Constraint: You MUST use the existing react-native-maps library. Do NOT add @rnmapbox/maps or any other library that requires a custom development build. The solution must be 100% compatible with Expo Go.
+
+1. Map Setup and Initial View
+
+•
+Component: Use the <MapView> component from react-native-maps.
+
+•
+Initial Region: Center the map on Buda, TX (latitude: 30.08, longitude: -97.84) with a reasonable zoom level to show the surrounding area (latitudeDelta: 0.2, longitudeDelta: 0.2).
+
+•
+Map Style: Use a hybrid or satellite map style for better terrain visualization.
+
+•
+Camera Pitch: If possible, apply a slight camera pitch to give a sense of perspective. Use the camera prop or animateCamera method with pitch: 45.
+
+2. The Balcones Escarpment Polyline
+
+This is the primary geological feature for this location. It must be clearly visible.
+
+•
+Component: Use the <Polyline> component.
+
+•
+Data: Use a mock array of coordinates that traces the escarpment north-to-south through the Austin/Buda area.
+
+•
+Styling: Make the line stand out. Use a bright orange color (#FFA500) and a strokeWidth of at least 4.
+
+JavaScript
+
+
+// data/balcones.js
+const balconesEscarpmentTrace = [
+  { latitude: 30.28, longitude: -97.76 },
+  { latitude: 30.15, longitude: -97.79 },
+  { latitude: 30.05, longitude: -97.80 }, // Near Buda
+  { latitude: 29.95, longitude: -97.82 },
+];
+
+// In the component
+<Polyline
+  coordinates={balconesEscarpmentTrace}
+  strokeColor="#FFA500"
+  strokeWidth={4}
+/>
+
+
+3. Points of Interest (POIs)
+
+Display tappable markers for interesting geological sites.
+
+•
+Component: Use the <Marker> component.
+
+•
+Data: Create a mock data array for at least 3-4 POIs relevant to the Buda area. Each POI object should have an id, name, type (e.g., 'Rock Outcrop', 'Fossil Site'), coordinate, and a short description.
+
+•
+Custom Icons: Create simple custom markers. You can use a <View> with custom styling and an icon inside (e.g., from react-native-vector-icons) to differentiate between POI types.
+
+JavaScript
+
+
+// data/pois.js
+const nearbyPois = [
+  {
+    id: 1, name: 'Austin Chalk Outcrop',
+    type: 'Rock Outcrop',
+    coordinate: { latitude: 30.10, longitude: -97.81 },
+    description: 'A road cut revealing the Austin Chalk, a Cretaceous-age limestone famous for its fossils.'
+  },
+  {
+    id: 2, name: 'Onion Creek Fossil Bed',
+    type: 'Fossil Site',
+    coordinate: { latitude: 30.12, longitude: -97.75 },
+    description: 'Known for Exogyra ponderosa fossils, a type of large oyster from the late Cretaceous period.'
+  }
+];
+
+
+4. Interactive Info Cards
+
+When a user taps a POI marker, display an information card at the bottom of the screen.
+
+•
+State Management: Use a useState hook (selectedPoi) to keep track of which marker is currently selected.
+
+•
+Marker onPress: Each <Marker> should have an onPress event that sets the selectedPoi state to that marker's data.
+
+•
+Card Component: Conditionally render an information card overlay at the bottom of the screen only when selectedPoi is not null. This card should display the POI's name, type, description, and a button for "Directions".
+
+•
+Deselection: Tapping the map or a close button on the card should set selectedPoi back to null, hiding the card.
+
+Final Quick Prompt for Replit
+
+
+"Using only the react-native-maps library, implement the 2D 'Explore Nearby' screen. Center the map on Buda, TX, and use a satellite or hybrid style. Draw the Balcones Escarpment as a thick, orange <Polyline>. Add several tappable <Marker>s for local geological Points of Interest like the 'Austin Chalk Outcrop' and 'Onion Creek Fossil Bed', using simple custom icons to differentiate them. When a marker is tapped, display an information card at the bottom of the screen with the POI's details. Ensure this works in Expo Go."
+

@@ -1,0 +1,132 @@
+Objective: This is the final and definitive fix. The primary goal is to solve the broken layer scaling so ALL layers fit on one screen without scrolling. The secondary goal is to correctly add the K-T boundary marker. We will also remove the yellow timeline bar to reduce clutter.
+
+Part 1: The Core Problem - Broken Vertical Scaling
+
+The current implementation uses a linear scale, which is wrong for this data. A 1,299ft layer (Frio Formation) takes up a massive amount of screen space, while a 49ft layer (Topsoil) is barely visible. This makes it impossible to see the full stratigraphy down to bedrock on one screen.
+
+THE FIX: We must use a logarithmic scaling algorithm. This will compress the height of very thick layers while preserving the relative (but not linear) proportions of all layers, ensuring everything fits on screen.
+
+Step 1.1: Implement the Logarithmic Scaling Function
+
+Replace any existing height calculation logic with this function. This is the most critical step.
+
+JavaScript
+
+
+/**
+ * Calculates layer heights using a logarithmic scale to ensure all layers fit on screen.
+ * @param {Array} layers - The array of geological layer objects from the API.
+ * @param {number} availableHeight - The total pixel height of the screen area for the chart.
+ * @returns {Array} The original layers array with a new `pixelHeight` property added to each.
+ */
+function calculateLogarithmicHeights(layers, availableHeight) {
+  const MIN_HEIGHT = 20; // Minimum pixel height for any layer to ensure it's tappable
+  const totalThickness = layers.reduce((sum, layer) => sum + layer.thickness, 0);
+
+  // Apply a logarithmic transformation to each layer's thickness
+  // The +1 prevents log(0) or log(1) issues
+  const logValues = layers.map(layer => Math.log(layer.thickness + 1));
+  const totalLogValue = logValues.reduce((sum, val) => sum + val, 0);
+
+  if (totalLogValue === 0) return layers.map(l => ({ ...l, pixelHeight: availableHeight / layers.length }));
+
+  const layersWithHeights = layers.map((layer, index) => {
+    // Calculate height based on its logarithmic proportion
+    const proportionalHeight = (logValues[index] / totalLogValue) * availableHeight;
+    return {
+      ...layer,
+      // Ensure height is at least MIN_HEIGHT, but not more than the available height
+      pixelHeight: Math.max(MIN_HEIGHT, proportionalHeight),
+    };
+  });
+
+  // Because we enforced a minimum height, the total might now exceed the available height.
+  // We need to normalize the heights to fit exactly.
+  const totalPixelHeight = layersWithHeights.reduce((sum, l) => sum + l.pixelHeight, 0);
+  const normalizationFactor = availableHeight / totalPixelHeight;
+
+  return layersWithHeights.map(layer => ({
+    ...layer,
+    pixelHeight: layer.pixelHeight * normalizationFactor,
+  }));
+}
+
+// --- USAGE --- //
+// Inside your component, after fetching the layers:
+// const screenHeight = Dimensions.get('window').height; // or the height of your container
+// const layersWithCalculatedHeights = calculateLogarithmicHeights(apiLayers, screenHeight - 200); // Subtract header/footer height
+// setLayers(layersWithCalculatedHeights);
+
+
+Step 1.2: Use the pixelHeight in your Component
+
+When you render each layer, use the new pixelHeight property for its style.
+
+JavaScript
+
+
+// Inside your .map() function
+<View style={{ height: layer.pixelHeight, ... }}>
+  {/* ... layer content ... */}
+</View>
+
+
+Part 2: Remove the Clutter
+
+The yellow timeline bar has failed multiple times and clutters the UI. DELETE IT. Remove the component and any related code entirely. A clean, readable chart is better than a broken, confusing one.
+
+Part 3: Add the K-T Boundary Marker (Simplified)
+
+This adds a simple, clean marker for the dinosaur extinction event at 66 million years ago.
+
+Step 3.1: Find the K-T Depth
+
+After you have calculated the pixelHeight for all layers, run this logic to find the exact pixel depth of the K-T boundary.
+
+JavaScript
+
+
+const KT_BOUNDARY_AGE = 66; // 66 Million Years Ago
+let ktMarkerPixelY = null;
+let cumulativeHeight = 0;
+
+// Ensure layers are sorted from youngest (top) to oldest (bottom)
+const sortedLayers = layersWithCalculatedHeights.sort((a, b) => a.t_age - b.t_age);
+
+for (const layer of sortedLayers) {
+  // Check if the K-T boundary falls within this layer's age range
+  if (KT_BOUNDARY_AGE >= layer.t_age && KT_BOUNDARY_AGE < layer.b_age) {
+    const layerAgeSpan = layer.b_age - layer.t_age;
+    if (layerAgeSpan > 0) {
+      // Calculate how far down into the layer the K-T age is
+      const positionWithinLayer = (KT_BOUNDARY_AGE - layer.t_age) / layerAgeSpan;
+      ktMarkerPixelY = cumulativeHeight + (positionWithinLayer * layer.pixelHeight);
+    }
+    break; // Found it, exit the loop
+  }
+  cumulativeHeight += layer.pixelHeight;
+}
+
+
+Step 3.2: Render the Marker
+
+Place this simple JSX inside the main view that holds the stratigraphy column. It will overlay a clean line and a label at the correct depth.
+
+JavaScript
+
+
+{ktMarkerPixelY !== null && (
+  <View style={{ position: 'absolute', top: ktMarkerPixelY, left: 10, right: 10, flexDirection: 'row', alignItems: 'center', zIndex: 100 }}>
+    <Text style={{ color: 'white', backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 6, marginRight: 5, fontSize: 12, fontWeight: 'bold' }}>
+      🦕 DINOSAUR EXTINCTION (66 Ma)
+    </Text>
+    <View style={{ flex: 1, height: 1, backgroundColor: 'white', borderStyle: 'dashed' }} />
+  </View>
+)}
+
+
+Final Quick Prompt for Replit
+
+
+"This is the final attempt. The stratigraphy screen scaling is broken. You MUST implement a logarithmic scaling algorithm to calculate layer heights so all layers fit on one screen; give each layer a minimum height of 20px to ensure it is tappable. Second, DELETE the yellow timeline bar on the right to reduce clutter. Third, add a simple K-T Boundary marker: a dashed white line and a label with a dinosaur emoji that says 'DINOSAUR EXTINCTION (66 Ma)' at the 66 million year depth."
+

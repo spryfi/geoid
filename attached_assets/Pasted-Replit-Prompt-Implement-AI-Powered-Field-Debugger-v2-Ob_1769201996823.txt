@@ -1,0 +1,99 @@
+Replit Prompt: Implement AI-Powered Field Debugger v2
+
+Objective: To upgrade the Field Debugger into an interactive, AI-powered tool that allows users to visually annotate issues and automatically generate high-quality Replit prompts for on-the-spot fixes.
+
+
+
+
+1. Screen Annotation Canvas
+
+•
+Trigger: After the user shakes the device to open the debug modal, the captured screenshot should be displayed.
+
+•
+Implementation: Overlay a drawing canvas directly on top of the screenshot. Use a library like react-native-sketch-canvas or react-native-draw-on-screen.
+
+•
+UI:
+
+•
+Provide simple drawing tools: a red pen tool and an undo button.
+
+•
+The user can now circle, underline, or draw arrows on the screenshot to pinpoint the exact problem.
+
+
+
+2. AI-Powered Prompt Generation
+
+This is the core of the new feature. The workflow is as follows:
+
+1.
+User Action: The user annotates the screenshot and fills in the "What went wrong?" text field with a simple description (e.g., "this text is cut off").
+
+2.
+New Button: Add a new primary button labeled "Generate Replit Prompt".
+
+3.
+API Call: When this button is tapped, make an API call to a powerful vision-capable AI model (e.g., GPT-4 Vision).
+
+4.
+Payload: The API call must send a multi-modal payload:
+
+•
+The annotated screenshot (as a base64 encoded image).
+
+•
+The user's raw text from the "What went wrong?" field.
+
+•
+The structured debug data (GPS, device info, action log).
+
+
+
+5.
+Meta-Prompt for the AI: The prompt sent to the AI model should be carefully engineered to produce the desired output. Use the following meta-prompt:
+
+
+"You are an expert React Native developer tasked with writing a bug fix prompt for another developer. Based on the provided annotated screenshot, user notes, and technical debug data, generate a concise, actionable Replit prompt in Markdown. The prompt should clearly identify the problem and suggest a specific code-level solution. Start with a one-sentence summary of the issue. Be direct and specific in your suggested fix."
+
+
+
+3. Results Display and Delivery
+
+1.
+Display Card: After the AI model responds, display the generated Replit prompt in a clean, read-only card within the modal. The card should have a title: "Generated Replit Prompt".
+
+2.
+Delivery Options: Below the card, provide two buttons:
+
+•
+"Copy to Clipboard": A simple button that copies the entire generated prompt text.
+
+•
+"Send to my Phone (SMS)": A button that triggers an SMS to be sent to the user's registered phone number.
+
+
+
+3.
+SMS Integration:
+
+•
+Backend: This requires a backend service to handle the SMS sending.
+
+•
+Service: Integrate with an SMS provider like Twilio.
+
+•
+Flow: The app sends the generated prompt text to your backend, which then makes the API call to Twilio to send the SMS.
+
+
+
+
+
+
+Quick Copy-Paste for Replit
+
+
+"Upgrade the Field Debugger. (1) After the shake gesture, allow the user to draw on the screenshot using a library like react-native-sketch-canvas. (2) Add a 'Generate Replit Prompt' button. On tap, send the annotated screenshot, user notes, and debug data to a GPT-4 Vision endpoint with a meta-prompt that asks it to generate a developer-ready bug fix prompt. (3) Display the AI-generated prompt in a card with 'Copy to Clipboard' and 'Send via SMS' buttons. Integrate with Twilio for the SMS functionality."
+

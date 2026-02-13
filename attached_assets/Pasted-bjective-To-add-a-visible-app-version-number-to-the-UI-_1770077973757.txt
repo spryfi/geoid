@@ -1,0 +1,82 @@
+bjective: To add a visible app version number to the UI and wire it up so that tapping it 7 times enables a hidden "Field Debug Mode". This is the entry point for the Smart Field Debugger feature.
+
+
+
+
+1. Display the App Version Number
+
+•
+Location: This should be placed in a logical, non-intrusive spot. The best location is at the bottom of the Settings screen.
+
+•
+Source: The version number should be read dynamically from the expo.version field in your app.json file. Do not hardcode it.
+
+•
+Implementation:
+
+JavaScript
+
+
+import Constants from 'expo-constants';
+
+const appVersion = Constants.expoConfig.version;
+
+// In your Settings screen component:
+<Text style={{ color: 'gray', textAlign: 'center', padding: 20 }}>
+  Version: {appVersion}
+</Text>
+
+
+
+
+
+2. Implement Hidden Tap Gesture Activation
+
+•
+Goal: To create a hidden "Easter egg" style activation for the debug mode.
+
+•
+Component: Wrap the <Text> component that displays the version number in a <TouchableOpacity> or similar tappable component.
+
+•
+Logic:
+
+1.
+Create a state variable to count taps, e.g., const [tapCount, setTapCount] = useState(0);
+
+2.
+Create a state variable to track if debug mode is active, e.g., const [isDebugMode, setIsDebugMode] = useDebugState(); (this should be a global state using Zustand or Context so other parts of the app can access it).
+
+3.
+On each tap of the version number, increment tapCount.
+
+4.
+When tapCount reaches 7, set isDebugMode to true.
+
+5.
+Show a confirmation message, like a Toast: "Field Debug Mode Activated!"
+
+6.
+Reset the tapCount to 0 after activation.
+
+7.
+If the user taps again after activation, show a toast: "Debug Mode is already active."
+
+
+
+3. Persist Debug State
+
+•
+Goal: The debug mode setting should persist even if the app is closed and reopened.
+
+•
+Implementation: Use AsyncStorage to save the isDebugMode state. When the app starts, read from AsyncStorage to initialize the debug state.
+
+
+
+
+Quick Copy-Paste for Replit
+
+
+"Please add the app version number to the bottom of the Settings screen, reading it dynamically from app.json. Wrap this version number in a TouchableOpacity and implement a hidden activation for debug mode: when the user taps it 7 times, set a global isDebugMode state to true (persisted in AsyncStorage) and show a 'Field Debug Mode Activated!' toast message. This is the entry point for the Smart Field Debugger."
+

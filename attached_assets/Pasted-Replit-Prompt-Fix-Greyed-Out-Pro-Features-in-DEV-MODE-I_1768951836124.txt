@@ -1,0 +1,158 @@
+Replit Prompt: Fix Greyed-Out Pro Features in DEV MODE
+
+Issue: The "Explore Nearby" card is greyed out with a "PRO" badge even though the app is running in DEV MODE with "All Pro Features Enabled". The UI should show this feature as fully unlocked and clickable.
+
+The Problem
+
+Looking at the Home screen, the "Explore Nearby" card:
+
+•
+Has greyed-out text
+
+•
+Shows a green "PRO" badge
+
+•
+Appears disabled/locked
+
+But the yellow banner at the top says "DEV MODE - All Pro Features Enabled", so this feature should appear fully unlocked.
+
+The Fix
+
+Find the component that renders the "Explore Nearby" card (likely in HomeScreen.js or similar) and update the conditional logic:
+
+Before (Buggy Code):
+
+JavaScript
+
+
+const isProFeature = true; // Explore Nearby is a Pro feature
+const isLocked = isProFeature && !userHasProSubscription;
+
+<TouchableOpacity 
+  style={[styles.featureCard, isLocked && styles.lockedCard]}
+  disabled={isLocked}
+>
+  <Text style={[styles.featureTitle, isLocked && styles.lockedText]}>
+    Explore Nearby
+  </Text>
+  {isLocked && <Badge text="PRO" />}
+</TouchableOpacity>
+
+
+After (Fixed Code):
+
+JavaScript
+
+
+const isProFeature = true; // Explore Nearby is a Pro feature
+const isDevMode = true; // or pull from context/state
+
+// DEV MODE unlocks ALL Pro features
+const isLocked = isProFeature && !userHasProSubscription && !isDevMode;
+
+<TouchableOpacity 
+  style={[styles.featureCard, isLocked && styles.lockedCard]}
+  disabled={isLocked}
+  onPress={() => navigation.navigate('ExploreNearby')}
+>
+  <Text style={[styles.featureTitle, isLocked && styles.lockedText]}>
+    Explore Nearby
+  </Text>
+  {isLocked && <Badge text="PRO" />}
+  {/* No badge shown when unlocked via DEV MODE */}
+</TouchableOpacity>
+
+
+Key Changes
+
+1.
+Add isDevMode check to the lock condition:
+
+JavaScript
+
+
+const isLocked = isProFeature && !userHasProSubscription && !isDevMode;
+
+
+
+
+2.
+Remove the PRO badge when in DEV MODE:
+
+JavaScript
+
+
+{isLocked && <Badge text="PRO" />}
+
+
+Since isLocked is now false in DEV MODE, the badge won't show.
+
+
+
+3.
+Ensure the card is clickable:
+
+JavaScript
+
+
+disabled={isLocked}  // Will be false in DEV MODE
+
+
+
+
+4.
+Remove greyed-out styling:
+
+JavaScript
+
+
+style={[styles.featureCard, isLocked && styles.lockedCard]}
+// lockedCard styles won't apply when isLocked is false
+
+
+
+
+Expected Result
+
+After this fix, when in DEV MODE:
+
+•
+✅ "Explore Nearby" card appears with full color (not greyed out)
+
+•
+✅ No "PRO" badge is shown
+
+•
+✅ Card is tappable and navigates to the Explore Nearby screen
+
+•
+✅ Matches the appearance of "My Collection" (fully unlocked)
+
+Alternative: Global Pro Status Hook
+
+For a cleaner solution, create a custom hook that checks both subscription AND dev mode:
+
+JavaScript
+
+
+// hooks/useProStatus.js
+import { useContext } from 'react';
+import { AppContext } from '../context/AppContext';
+
+export const useProStatus = () => {
+  const { isDevMode, userSubscription } = useContext(AppContext);
+  
+  // DEV MODE grants Pro access
+  const hasProAccess = isDevMode || userSubscription?.tier === 'pro';
+  
+  return { hasProAccess, isDevMode };
+};
+
+// Usage in any component:
+const { hasProAccess } = useProStatus();
+const isLocked = !hasProAccess;
+
+
+This ensures ALL Pro features throughout the app respect the DEV MODE flag consistently.
+

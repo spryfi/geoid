@@ -1,0 +1,118 @@
+FIX Dynamic Text Sizing for Geological Layers
+
+Objective: The logarithmic scaling is perfect, but now the text inside the layers is getting cut off. We need to implement a dynamic font sizing rule so the text always fits perfectly within its layer's height, preventing any text from being obscured.
+
+The Problem
+
+The current UI looks great, but it has a critical flaw that makes it look sloppy:
+
+1.
+Text Overflow: In thin layers (like "Caliche/Topsoil" and "Caddell Formation"), the subtitle text ("Holocene", "Eocene") is cut off because the layer height is too small for the fixed font size.
+
+2.
+Bedrock Overlap: The "You've Reached Bedrock" message is incorrectly rendered on top of the "Caddell Formation" layer, obscuring its title.
+
+The Solution: A Dynamic Font Sizing Function
+
+We will create a simple helper function that returns an appropriate font size based on the layer's pixelHeight. This ensures that as layers get thinner, the text inside them shrinks gracefully.
+
+Step 1: Create the getStylesForHeight Function
+
+This function will contain the logic for our text styling rules. Place this function in a utility file or directly in your StratigraphyScreen.js component.
+
+JavaScript
+
+
+/**
+ * Determines the appropriate font sizes and visibility based on the layer's pixel height.
+ * @param {number} height - The pixel height of the layer.
+ * @returns {object} An object with { titleSize, subtitleSize, showSubtitle }.
+ */
+function getStylesForHeight(height) {
+  if (height >= 50) {
+    // Plenty of space: Full size title and subtitle
+    return { titleSize: 16, subtitleSize: 12, showSubtitle: true };
+  } else if (height >= 35) {
+    // Medium space: Slightly smaller title and subtitle
+    return { titleSize: 14, subtitleSize: 10, showSubtitle: true };
+  } else if (height >= 20) {
+    // Tight space: Show only a smaller title
+    return { titleSize: 12, subtitleSize: 0, showSubtitle: false };
+  } else {
+    // Very tight space: Show only a tiny title
+    return { titleSize: 10, subtitleSize: 0, showSubtitle: false };
+  }
+}
+
+
+Step 2: Apply the Dynamic Styles in the Layer Component
+
+Now, inside the .map() function where you render each GeologicalLayer, call this new function and apply the styles to your <Text> components.
+
+JavaScript
+
+
+// Inside your layers.map(layer => { ... })
+
+// 1. Get the dynamic styles for the current layer
+const textStyles = getStylesForHeight(layer.pixelHeight);
+
+return (
+  <View key={layer.id} style={{ height: layer.pixelHeight, justifyContent: 'center', paddingHorizontal: 10 }}>
+    
+    {/* 2. Apply the dynamic font size to the title */}
+    <Text style={{ color: 'white', fontWeight: 'bold', fontSize: textStyles.titleSize }}>
+      {layer.name}
+    </Text>
+    
+    {/* 3. Conditionally render the subtitle with its dynamic font size */}
+    {textStyles.showSubtitle && (
+      <Text style={{ color: 'white', opacity: 0.8, fontSize: textStyles.subtitleSize }}>
+        {layer.epoch} // Assuming the epoch name is here
+      </Text>
+    )}
+
+  </View>
+);
+
+
+Step 3: Fix the Bedrock Overlap
+
+The "You've Reached Bedrock" message should not be part of the layers.map() loop. It is a special footer. It should be rendered AFTER the loop finishes.
+
+Incorrect Structure (Current):
+
+JavaScript
+
+
+<View>
+  {layers.map(layer => {
+    // ... logic that might incorrectly show bedrock inside the last layer
+  })}
+</View>
+
+
+Correct Structure (The Fix):
+
+JavaScript
+
+
+<View> // This is the main container for the column
+  {/* First, render all the geological layers */}
+  {layers.map(layer => (
+    <GeologicalLayer key={layer.id} layer={layer} />
+  ))}
+
+  {/* SECOND, AFTER the loop, render the separate Bedrock component */}
+  <View style={{ height: 100, backgroundColor: '#2c3e50', justifyContent: 'center', alignItems: 'center' }}>
+    <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>You've Reached Bedrock</Text>
+    <Text style={{ color: 'white', opacity: 0.9 }}>The ancient foundation of the continent</Text>
+  </View>
+</View>
+
+
+Final Quick Prompt for Replit
+
+
+"The text is getting cut off in thin layers. Implement a dynamic font sizing function called getStylesForHeight(height) that returns smaller font sizes for thinner layers. If a layer's height is less than 35px, hide the subtitle text completely. Apply these dynamic styles to the layer's title and subtitle. Also, fix the bedrock overlap: render the 'You've Reached Bedrock' view as a separate component AFTER the layers.map() loop, not inside it."
+

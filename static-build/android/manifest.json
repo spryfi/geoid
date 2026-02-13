@@ -1,0 +1,161 @@
+{
+  "id": "7a385ae7-804f-4281-beff-52648274aed2",
+  "createdAt": "2026-01-22T03:02:11.292Z",
+  "runtimeVersion": "exposdk:54.0.0",
+  "launchAsset": {
+    "key": "bundle-1769050931292-7803",
+    "contentType": "application/javascript",
+    "url": "https://96a3025d-41b7-4aae-836e-ba5a59db8145-00-kcxxwm5gvdex.worf.replit.dev:5000/1769050931292-7803/_expo/static/js/android/bundle.js"
+  },
+  "assets": [],
+  "metadata": {},
+  "extra": {
+    "eas": {
+      "projectId": "geoid-pro"
+    },
+    "expoClient": {
+      "name": "GeoID Pro",
+      "slug": "geoid-pro",
+      "version": "1.0.0",
+      "orientation": "portrait",
+      "icon": "./assets/images/app-icon.png",
+      "scheme": "geoid",
+      "userInterfaceStyle": "automatic",
+      "newArchEnabled": true,
+      "ios": {
+        "supportsTablet": true,
+        "bundleIdentifier": "com.geoid.pro",
+        "buildNumber": "1",
+        "infoPlist": {
+          "NSCameraUsageDescription": "GeoID Pro needs camera access to photograph and identify rocks and geological formations.",
+          "NSLocationWhenInUseUsageDescription": "GeoID Pro uses your location to show nearby geological features and provide context about the rocks in your area.",
+          "NSLocationAlwaysAndWhenInUseUsageDescription": "GeoID Pro uses your location to show nearby geological features and provide context about the rocks in your area.",
+          "NSPhotoLibraryUsageDescription": "GeoID Pro needs photo library access to analyze rock photos from your gallery.",
+          "NSPhotoLibraryAddUsageDescription": "GeoID Pro can save identified rock photos to your photo library."
+        }
+      },
+      "android": {
+        "adaptiveIcon": {
+          "backgroundColor": "#2C3E50",
+          "foregroundImage": "./assets/images/app-icon.png",
+          "foregroundImageUrl": "https://96a3025d-41b7-4aae-836e-ba5a59db8145-00-kcxxwm5gvdex.worf.replit.dev/assets/./assets/images/app-icon.png"
+        },
+        "edgeToEdgeEnabled": true,
+        "predictiveBackGestureEnabled": false,
+        "package": "com.geoid.pro",
+        "versionCode": 1,
+        "permissions": [
+          "android.permission.CAMERA",
+          "android.permission.ACCESS_FINE_LOCATION",
+          "android.permission.ACCESS_COARSE_LOCATION",
+          "android.permission.READ_EXTERNAL_STORAGE",
+          "android.permission.WRITE_EXTERNAL_STORAGE",
+          "android.permission.INTERNET",
+          "android.permission.ACCESS_NETWORK_STATE",
+          "android.permission.CAMERA",
+          "android.permission.RECORD_AUDIO",
+          "android.permission.ACCESS_COARSE_LOCATION",
+          "android.permission.ACCESS_FINE_LOCATION"
+        ]
+      },
+      "web": {
+        "output": "single",
+        "favicon": "./assets/images/app-icon.png"
+      },
+      "plugins": [
+        [
+          "expo-splash-screen",
+          {
+            "image": "./assets/images/geoid_logo_splashPin.png",
+            "imageWidth": 200,
+            "resizeMode": "contain",
+            "backgroundColor": "#F5E6D3",
+            "dark": {
+              "backgroundColor": "#2C3E50",
+              "image": "./assets/images/geoid_logo_splashPin.png"
+            }
+          }
+        ],
+        "expo-web-browser",
+        [
+          "expo-camera",
+          {
+            "cameraPermission": "GeoID Pro needs camera access to photograph and identify rocks and geological formations."
+          }
+        ],
+        [
+          "expo-location",
+          {
+            "locationAlwaysAndWhenInUsePermission": "GeoID Pro uses your location to show nearby geological features and provide context about the rocks in your area."
+          }
+        ],
+        [
+          "expo-image-picker",
+          {
+            "photosPermission": "GeoID Pro needs photo library access to analyze rock photos from your gallery."
+          }
+        ]
+      ],
+      "experiments": {
+        "reactCompiler": true
+      },
+      "extra": {
+        "eas": {
+          "projectId": "geoid-pro"
+        }
+      },
+      "_internal": {
+        "isDebug": false,
+        "projectRoot": "/home/runner/workspace",
+        "dynamicConfigPath": {},
+        "staticConfigPath": "/home/runner/workspace/app.json",
+        "packageJsonPath": "/home/runner/workspace/package.json",
+        "pluginHistory": {
+          "expo-splash-screen": {
+            "name": "expo-splash-screen",
+            "version": "31.0.11"
+          },
+          "expo-web-browser": {
+            "name": "expo-web-browser",
+            "version": "15.0.9"
+          },
+          "expo-camera": {
+            "name": "expo-camera",
+            "version": "17.0.10"
+          },
+          "expo-location": {
+            "name": "expo-location",
+            "version": "19.0.8"
+          },
+          "expo-image-picker": {
+            "name": "expo-image-picker",
+            "version": "17.0.10"
+          }
+        }
+      },
+      "sdkVersion": "54.0.0",
+      "platforms": [
+        "ios",
+        "android",
+        "web"
+      ],
+      "androidStatusBar": {
+        "backgroundColor": "#F5E6D3"
+      },
+      "iconUrl": "https://96a3025d-41b7-4aae-836e-ba5a59db8145-00-kcxxwm5gvdex.worf.replit.dev/assets/./assets/images/app-icon.png",
+      "hostUri": "96a3025d-41b7-4aae-836e-ba5a59db8145-00-kcxxwm5gvdex.worf.replit.dev:5000"
+    },
+    "expoGo": {
+      "debuggerHost": "96a3025d-41b7-4aae-836e-ba5a59db8145-00-kcxxwm5gvdex.worf.replit.dev:5000",
+      "developer": {
+        "tool": "expo-cli",
+        "projectRoot": "/home/runner/workspace"
+      },
+      "packagerOpts": {
+        "dev": false
+      },
+      "mainModuleName": "client/index"
+    },
+    "scopeKey": "@anonymous/geoid-pro-69072084-016b-4f96-8278-99cc7a12d390"
+  }
+}

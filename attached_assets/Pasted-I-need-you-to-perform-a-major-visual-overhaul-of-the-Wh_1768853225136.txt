@@ -1,0 +1,279 @@
+I need you to perform a major visual overhaul of the WhatsUnderMyFeetScreen. The current implementation with flat colored bars is incorrect. You must replace it with a dynamic, scrollable, and visually rich geological cross-section using the provided assets and the following detailed instructions.
+
+Step 1: Upload and Configure Assets
+
+First, I will provide a ZIP file named UNDER_MY_FEET_ENHANCEMENT_PACKAGE.zip. You must use the assets from this file. Create the folders assets/textures/ and assets/icons/ and place the corresponding files in them. Then, update pubspec.yaml to include these asset folders:
+
+YAML
+
+
+flutter:
+  assets:
+    - assets/textures/
+    - assets/icons/
+
+
+Step 2: Create the GeologicalLayerWidget
+
+This is the core widget for rendering each layer. Create a new file lib/widgets/geological_layer_widget.dart and paste this exact code. This widget uses a ClipPath to create the natural, irregular edge on the right side.
+
+Plain Text
+
+
+import 'package:flutter/material.dart';
+
+class GeologicalLayerWidget extends StatelessWidget {
+  final String name;
+  final String epoch;
+  final String texturePath;
+  final double height;
+  final bool isAquifer;
+
+  const GeologicalLayerWidget({
+    Key? key,
+    required this.name,
+    required this.epoch,
+    required this.texturePath,
+    required this.height,
+    this.isAquifer = false,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipPath(
+      clipper: IrregularEdgeClipper(),
+      child: Container(
+        height: height,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(texturePath),
+            fit: BoxFit.cover,
+            repeat: ImageRepeat.repeat,
+          ),
+        ),
+        child: Stack(
+          children: [
+            // Layer Name and Epoch
+            Positioned(
+              left: 16,
+              top: 12,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                    ),
+                  ),
+                  Text(
+                    epoch,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 14,
+                      shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Aquifer Icon
+            if (isAquifer)
+              Positioned(
+                right: 40, // Indent from the wavy edge
+                bottom: 12,
+                child: Image.asset(
+                  'assets/icons/icon_water_drop.png',
+                  width: 32,
+                  height: 32,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Custom Clipper for the irregular rock edge
+class IrregularEdgeClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height);
+    path.lineTo(size.width - 20, size.height);
+    path.quadraticBezierTo(size.width, size.height * 0.75, size.width - 30, size.height * 0.5);
+    path.quadraticBezierTo(size.width - 50, size.height * 0.25, size.width - 10, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+
+Step 3: Create the DepthScalePainter
+
+This painter will draw the depth markers on the left side. Create a new file lib/widgets/depth_scale_painter.dart and paste this code:
+
+Plain Text
+
+
+import 'package:flutter/material.dart';
+
+class DepthScalePainter extends CustomPainter {
+  final double scrollOffset;
+  final double scaleFactor; // e.g., 0.5 pixels per meter
+
+  DepthScalePainter({required this.scrollOffset, this.scaleFactor = 0.5});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.grey[600]!
+      ..strokeWidth = 1;
+
+    final textPainter = TextPainter(
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    );
+
+    // Draw vertical line
+    canvas.drawLine(Offset(size.width - 1, 0), Offset(size.width - 1, size.height), paint);
+
+    // Draw depth markers
+    for (int i = 0; i < 5000; i += 50) {
+      final yPos = (i * scaleFactor) - scrollOffset;
+      if (yPos > 0 && yPos < size.height) {
+        canvas.drawLine(Offset(size.width - 10, yPos), Offset(size.width - 1, yPos), paint);
+        textPainter.text = TextSpan(
+          text: '${i}m',
+          style: TextStyle(color: Colors.grey[700], fontSize: 12),
+        );
+        textPainter.layout();
+        textPainter.paint(canvas, Offset(size.width - 45, yPos - 8));
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+
+Step 4: Update the Main Screen (WhatsUnderMyFeetScreen)
+
+Now, you must completely refactor the build method of the WhatsUnderMyFeetScreen to use these new widgets. The structure should be a Row containing the depth scale and the scrollable list of layers.
+
+Plain Text
+
+
+import 'package:flutter/material.dart';
+// ... other imports
+import 'package:your_app/widgets/geological_layer_widget.dart';
+import 'package:your_app/widgets/depth_scale_painter.dart';
+
+class WhatsUnderMyFeetScreen extends StatefulWidget {
+  // ... existing code
+}
+
+class _WhatsUnderMyFeetScreenState extends State<WhatsUnderMyFeetScreen> {
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      setState(() {
+        _scrollOffset = _scrollController.offset;
+      });
+    });
+    // ... existing initState code
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF5D4037), // Dark earth background
+      appBar: AppBar(/* ... existing app bar ... */),
+      body: Row(
+        children: [
+          // Depth Scale on the left
+          CustomPaint(
+            size: const Size(60, double.infinity),
+            painter: DepthScalePainter(scrollOffset: _scrollOffset, scaleFactor: 0.5),
+          ),
+          
+          // Geological Layers on the right
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              itemCount: _layers.length, // your list of layer data
+              itemBuilder: (context, index) {
+                final layer = _layers[index];
+                final layerHeight = calculateLayerHeight(layer.thickness);
+                final texture = getTextureForLithology(layer.lithology);
+                final isAquiferLayer = isAquifer(layer.lithology, layer.name);
+                final displayName = sanitizeLayerName(layer.name, layer.epoch, index);
+
+                return GeologicalLayerWidget(
+                  name: displayName,
+                  epoch: layer.epoch,
+                  texturePath: texture,
+                  height: layerHeight,
+                  isAquifer: isAquiferLayer,
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- HELPER FUNCTIONS --- 
+  // PASTE THE FOLLOWING FUNCTIONS HERE:
+  // 1. calculateLayerHeight(double thicknessMeters)
+  // 2. getTextureForLithology(String lithology)
+  // 3. isAquifer(String lithology, String? formationName)
+  // 4. sanitizeLayerName(String name, String epoch, int index)
+}
+
+
+Step 5: Implement the Helper Functions
+
+Inside the _WhatsUnderMyFeetScreenState, paste the helper functions from the UNDER_MY_FEET_TECHNICAL_SPEC.md document I provided previously. These are calculateLayerHeight, getTextureForLithology, isAquifer, and sanitizeLayerName.
+
+Final Check:
+
+After these changes, the screen must:
+
+1.
+Display a fixed depth scale on the left.
+
+2.
+Show a scrollable column of geological layers on the right.
+
+3.
+Each layer must have a realistic, tileable rock texture.
+
+4.
+Each layer must have an irregular, natural-looking right edge.
+
+5.
+The height of each layer must be proportional to its thickness.
+
+6.
+Aquifer layers must show the water drop icon.
+
+7.
+The top layer must say "Surface Soil & Alluvium", not "Unnamed".
+
+This is a critical visual feature. Please follow these instructions exactly.
+

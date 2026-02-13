@@ -1,0 +1,148 @@
+"Please perform a full audit of the 'Identify Feature' logic against the checklist in the attached file. Then, implement the full identification workflow: (1) Use GPT-4 Vision with a 3-attempt retry loop that asks the user for better photos. (2) After 3 tries, fall back to a location-based identification using the Macrostrat API. (3) Cross-check the vision result with the location data to generate a confidence score. (4) For high-confidence results, use a second vision AI (like Gemini) to verify the identification. (5) On the results screen, show a vertical stratigraphy diagram. (6) Finally, add a hidden 'Field Debug Mode' that lets me send you bug reports with logs, photos, and GPS data by shaking my phone."
+
+Replit Prompt: Full Audit & Implementation of "Identify Feature" Core Logic
+
+Objective: To audit the current implementation of the camera-based "Identify Feature" and provide a clear roadmap to build out the full, intelligent identification engine as envisioned. This is the core intelligence of the app.
+
+
+
+
+Part 1: AUDIT CHECKLIST
+
+Please review the current codebase and confirm the status of each of the following features with a YES or NO.
+
+Feature
+Status (YES/NO)
+1. GPT-4 Vision Integration: Is the camera connected to the GPT-4 Vision API to analyze user-submitted photos of rocks/formations?
+
+
+2. Intelligent Retry Logic: If GPT-4 Vision is uncertain, does the app prompt the user for a better photo (e.g., "Please zoom in" or "Try a different angle")?
+
+
+3. Three-Attempt Limit: Does the retry logic stop after 3 failed vision analysis attempts?
+
+
+4. Location Fallback: After 3 failed attempts, does the app use the device's GPS location to query a geological database (like Macrostrat) for the most likely formation at that spot?
+
+
+5. Confidence Score: Is a confidence score calculated and displayed, based on the match between vision analysis and location data?
+
+
+6. Dual AI Verification: Is a second, independent vision AI model (e.g., Gemini, Claude) being used to cross-check the primary identification for accuracy?
+
+
+7. Rich Results Display: Does the results screen show a vertical stratigraphy diagram, fun facts, and environmental context?
+
+
+8. Tappable Landmark Layers: For famous, multi-layer landmarks (e.g., Grand Canyon), can the user tap different parts of the image to get info on each specific formation?
+
+
+9. In-App Debug Agent: Is there a hidden/toggleable debug mode that allows a user to capture and send field data (logs, image, GPS) to you for troubleshooting?
+
+
+
+
+
+
+
+
+
+Part 2: IMPLEMENTATION PLAN
+
+Based on the audit results, please implement the following missing features.
+
+Step 2.1: The Core Identification Flow
+
+This is the primary user workflow.
+
+1.
+On Photo Capture: Send the image to the GPT-4 Vision API with a detailed prompt: \"Analyze this image of a geological feature. Identify the primary rock formation visible. Consider texture, color, layering, and erosion patterns. Respond with the formation name and your confidence level (High, Medium, Low).\"
+
+2.
+Handle AI Response:
+
+•
+If confidence is High, proceed to Step 2.2 (Location Verification).
+
+•
+If confidence is Medium or Low, and attempts < 3, respond to the user with a specific request: \"I'm having trouble identifying this. Can you please take another photo from a different angle?\" or \"Can you get closer and take a picture of the rock's texture?\" Increment the attempt counter.
+
+•
+If attempts reach 3, proceed to Step 2.2, but flag that this is a location-based fallback identification.
+
+
+
+Step 2.2: Location Verification & Confidence Score
+
+1.
+Query Geological Database: Using the device's GPS, make an API call to the Macrostrat.org API to get the list of geological units at that coordinate.
+
+2.
+Cross-Reference:
+
+•
+If the formation name from GPT-4 Vision exists in the Macrostrat data for that location, the confidence score is High (90-95%).
+
+•
+If the vision-identified name doesn't match but is geologically similar (e.g., another Cretaceous limestone), the confidence is Medium (60-75%).
+
+•
+If it's a location-based fallback, identify the top-most bedrock unit from Macrostrat and assign a Low confidence (40-50%), clearly stating it's a location-based guess.
+
+
+
+Step 2.3: Dual AI Verification (for High Confidence)
+
+1.
+Create a Second AI Call: If the primary AI has High confidence, send the same image to a second, independent vision model (e.g., Google's Gemini API).
+
+2.
+Compare Results:
+
+•
+If both models agree on the formation name, boost the confidence score to Very High (98-99%).
+
+•
+If they disagree, present both results to the user: \"Our primary analysis suggests this is the Austin Chalk. A second opinion suggests it could be the Edwards Formation. Here is information on both.\"
+
+
+
+Step 2.4: Rich Results Display
+
+1.
+Vertical Stratigraphy: On the results screen, reuse the "What's Under My Feet?" component to show a vertical column of the strata at that location, highlighting the identified formation.
+
+2.
+Tappable Layers (for Major Landmarks): For specific, hard-coded landmarks (e.g., Monument Valley, Grand Canyon), use the AI's identification of the landmark itself. Then, overlay invisible tappable zones on the image corresponding to known formations (e.g., a tap on the top of Mitten Butte shows info on the De Chelly Sandstone).
+
+Step 2.5: In-App Debug Agent
+
+1.
+Create a Hidden Toggle: In the app's settings screen, add a hidden feature where tapping the version number 5 times enables "Field Debug Mode".
+
+2.
+Add a Shake Gesture: When in debug mode, if the user shakes their device, open a modal.
+
+3.
+Capture & Send Data: The modal should have a text box for the user to describe the problem. When they hit "Send Report", capture the following data and send it to a dedicated logging service (or even a private Discord webhook for simplicity):
+
+•
+The user's text description.
+
+•
+The last 5 actions they took.
+
+•
+The current GPS coordinates.
+
+•
+The last photo taken.
+
+•
+A screenshot of the current screen.
+
+•
+Device info (OS, app version).
+
+
+

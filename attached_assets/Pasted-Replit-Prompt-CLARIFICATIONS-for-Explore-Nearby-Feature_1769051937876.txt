@@ -1,0 +1,159 @@
+Replit Prompt: CLARIFICATIONS for Explore Nearby Feature
+
+Issue 1: Camera Heading Must Be Location-Aware
+
+IMPORTANT: The camera heading of 270° (west) was specific to the Buda, TX location because the user is east of the Balcones Escarpment. The camera should point toward the escarpment from the user's location.
+
+The Fix: Dynamic Camera Heading
+
+The camera heading must be calculated based on the user's position relative to the nearest major geological feature (in this case, the Balcones Escarpment).
+
+Logic:
+
+1.
+Get the user's current location
+
+2.
+Find the nearest point on the Balcones Escarpment polyline
+
+3.
+Calculate the bearing (heading) from the user's location to that point
+
+4.
+Set the camera heading to that bearing
+
+Example Implementation:
+
+JavaScript
+
+
+// Helper function to calculate bearing between two points
+function calculateBearing(lat1, lon1, lat2, lon2) {
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const y = Math.sin(dLon) * Math.cos(lat2 * Math.PI / 180);
+  const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+            Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLon);
+  const bearing = Math.atan2(y, x) * 180 / Math.PI;
+  return (bearing + 360) % 360; // Normalize to 0-360
+}
+
+// In your component
+const [cameraHeading, setCameraHeading] = useState(270); // Default
+
+useEffect(() => {
+  // Get user location
+  Location.getCurrentPositionAsync().then(location => {
+    const userLat = location.coords.latitude;
+    const userLon = location.coords.longitude;
+    
+    // Find nearest point on Balcones Escarpment (simplified - use first point for now)
+    const nearestEscarpmentPoint = balconesEscarpmentTrace[0];
+    
+    // Calculate bearing from user to escarpment
+    const heading = calculateBearing(
+      userLat, userLon,
+      nearestEscarpmentPoint.latitude,
+      nearestEscarpmentPoint.longitude
+    );
+    
+    setCameraHeading(heading);
+  });
+}, []);
+
+// Use the dynamic heading in your camera
+<MapView camera={{ heading: cameraHeading, pitch: 45, ... }} />
+
+
+Result: If a user is in San Antonio (south of the escarpment), the camera will point north. If they're in Waco (north of the escarpment), it will point south. If they're in Buda (east), it points west.
+
+
+
+
+Issue 2: Use Geological-Themed Icons, Not Generic Shapes
+
+PROBLEM: The current markers use generic icons like boxes and stacks of paper. This looks unprofessional and doesn't communicate what the POI is.
+
+The Fix: Geology-Specific Icons
+
+Use icons from @expo/vector-icons (which is already included in Expo) that relate to geology and nature.
+
+Recommended Icon Mapping:
+
+POI Type
+Icon Library
+Icon Name
+Color
+Fossil Site
+MaterialCommunityIcons
+bone or bug
+#8B4513 (brown)
+Rock Outcrop
+MaterialCommunityIcons
+image-filter-hdr (mountain)
+#696969 (gray)
+Mineral Deposit
+MaterialCommunityIcons
+diamond-stone or crystal-ball
+#9370DB (purple)
+Geological Landmark
+MaterialCommunityIcons
+terrain or triangle
+#CD853F (tan)
+
+
+
+
+Example Implementation:
+
+JavaScript
+
+
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+// Custom Marker Component
+const GeologicalMarker = ({ poi, onPress }) => {
+  const getIconConfig = (type) => {
+    switch(type) {
+      case 'Fossil Site':
+        return { name: 'bone', color: '#8B4513' };
+      case 'Rock Outcrop':
+        return { name: 'image-filter-hdr', color: '#696969' };
+      case 'Mineral Deposit':
+        return { name: 'diamond-stone', color: '#9370DB' };
+      case 'Geological Landmark':
+        return { name: 'terrain', color: '#CD853F' };
+      default:
+        return { name: 'map-marker', color: '#FF6347' };
+    }
+  };
+  
+  const iconConfig = getIconConfig(poi.type);
+  
+  return (
+    <Marker coordinate={poi.coordinate} onPress={onPress}>
+      <View style={{ 
+        backgroundColor: 'white', 
+        padding: 8, 
+        borderRadius: 20,
+        borderWidth: 2,
+        borderColor: iconConfig.color
+      }}>
+        <MaterialCommunityIcons 
+          name={iconConfig.name} 
+          size={24} 
+          color={iconConfig.color} 
+        />
+      </View>
+    </Marker>
+  );
+};
+
+
+
+
+
+Final Quick Prompt for Replit
+
+
+"IMPORTANT CLARIFICATIONS: (1) The camera heading must be DYNAMIC based on the user's location. Calculate the bearing from the user's position to the nearest point on the Balcones Escarpment and set the camera heading to that bearing. The 270° heading was only for Buda, TX. (2) Replace the generic marker icons with geology-themed icons from MaterialCommunityIcons: use 'bone' for Fossil Sites, 'image-filter-hdr' for Rock Outcrops, 'diamond-stone' for Mineral Deposits, and 'terrain' for Geological Landmarks. Each icon should be in a colored circle matching its type."
+

@@ -1,0 +1,92 @@
+Replit Enhancement Prompt: What's Under My Feet?
+
+Objective: Transform the existing 'What's Under My Feet?' feature from a simple list of colored bars into a visually stunning, scientifically accurate, scrollable geological cross-section, as seen in our UI mockups.
+
+Current State: The feature correctly fetches data from the Macrostrat API and displays it as a list of ListView items with solid color backgrounds.
+
+Target State: A dynamic, infinitely scrollable CustomScrollView that renders each geological layer as a Sliver whose height is directly proportional to its real-world thickness, with realistic, tileable rock textures and special icon markers.
+
+
+
+
+Detailed Implementation Steps:
+
+1. Refactor the UI Structure:
+
+•
+Replace the ListView with a CustomScrollView.
+
+•
+The main content will be a SliverList managed by a SliverChildBuilderDelegate.
+
+•
+Create a new widget, GeologicalLayerSliver, which will be responsible for rendering each individual layer.
+
+2. Implement Scaled Layer Height:
+
+•
+In the SliverChildBuilderDelegate, for each layer returned by the Macrostrat API, read the thickness value (e.g., 15m, 300m).
+
+•
+Create a scaling factor. A good starting point is 1.0 logical pixel per meter. So, a 15m layer will have a height of 15.0, and a 300m layer will have a height of 300.0.
+
+•
+Pass this calculated height to the GeologicalLayerSliver widget.
+
+•
+The GeologicalLayerSliver will return a Container with this height property.
+
+3. Add Tileable Rock Textures:
+
+•
+I will provide you with a set of tileable PNG images for different rock types (e.g., limestone.png, sandstone.png, shale.png). Add these to your assets/textures/ folder and update pubspec.yaml.
+
+•
+Create a mapping function getTextureForLithology(String lithology).
+
+•
+This function will take the rock type string from the API (e.g., 'sandstone', 'shale', 'limestone') and return the corresponding asset path (e.g., 'assets/textures/sandstone.png').
+
+•
+In the GeologicalLayerSliver widget, use this texture as the image for the BoxDecoration of the Container, with fit: BoxFit.cover and repeat: ImageRepeat.repeat.
+
+4. Fix the "Unnamed" Top Layer:
+
+•
+In the data processing logic, if the top layer's name is 'Unnamed', programmatically change it to "Surface Soil & Alluvium". Use a generic brown soil texture for this layer.
+
+5. Implement Special Markers (Aquifers, Boundaries):
+
+•
+Create a Stack layout within the GeologicalLayerSliver widget.
+
+•
+Aquifers: Create a function isAquifer(String lithology) that returns true for porous rocks like 'sandstone' or 'limestone'. If it returns true, display a water drop icon (assets/icons/water_drop.png) centered within the layer.
+
+•
+Boundaries: If the API data indicates a significant boundary (e.g., K-T Boundary), overlay a dashed line and a special icon (e.g., assets/icons/dino_skull.png) at the appropriate depth within the layer stack.
+
+6. Add the Depth Scale:
+
+•
+On the left side of the CustomScrollView, create a fixed-position Column that does not scroll with the content.
+
+•
+This Column will display the depth markers (0m, 50m, 100m, 250m, 500m, etc.).
+
+•
+Use a NotificationListener<ScrollNotification> to listen to the scroll position of the CustomScrollView and dynamically update a separate "Current Depth" indicator if desired, but the static scale is the priority.
+
+7. Final Polish:
+
+•
+Ensure the layer name text is clearly readable against the new textured backgrounds. Use a semi-transparent dark overlay behind the text if needed.
+
+•
+Make sure the entire cross-section is smoothly scrollable, even for very deep geological columns.
+
+•
+When a user taps on a layer, it should still navigate to the detailed information screen as it does now.
+
+By following these steps, you will upgrade the feature from a basic list to a professional, engaging, and scientifically informative visualization that matches our design goals.
+

@@ -1,0 +1,270 @@
+Good call — TNRIS is Texas-only. For nationwide coverage at high resolution, the architecture needs to layer multiple sources. Let me think through what the prompt needs to cover and write you something comprehensive.
+The key challenge is that the Balcones Fault Zone (Miocene, ~20-25 Ma) and many other major geological features are too old for the USGS Quaternary database. Macrostrat is actually the best single source for nationwide coverage because it ingests data from all 50 state geological surveys plus USGS maps, and it includes faults of all ages.
+Here's a prompt you can give the agent:
+
+
+Geology Data Architecture — Complete Rewrite
+Remove ALL hardcoded geological features (the Balcones Escarpment straight line, any manually placed markers). Replace with a real data-driven architecture using these APIs in priority order. All geological features displayed in the app must come from API data, never hardcoded coordinates.
+DATA SOURCES (Nationwide, All Ages)
+Primary — Macrostrat API (nationwide geologic map data, all ages, free, no API key)
+This is our main data source. It serves GeoJSON from 225+ digitized geological maps covering the entire US at scales from 1:24,000 to 1:250,000. It includes fault lines, formation boundaries, rock units, fossil sites, and stratigraphic data from every state geological survey.
+Endpoints we need:
+
+GET https://macrostrat.org/api/v2/geologic_units/map?lat={lat}&lng={lng}&format=geojson_bare
+— Returns geologic map polygons at a point. Each polygon includes: unit_name, strat_name, lith (lithology), descrip, comments, t_age (top age in Ma), b_age (bottom age in Ma), t_interval (period name like "Cretaceous"), b_interval, color (hex color for the unit). Use this to populate "what rock am I standing on" and to identify formation boundaries.
+GET https://macrostrat.org/api/v2/geologic_units/map?shape=linestring&lat={lat}&lng={lng}&format=geojson_bare
+— For line features (faults, contacts). Query the map layers for line features within the viewport.
+GET https://macrostrat.org/api/v2/carto/small?lat={lat}&lng={lng}  and /medium and /large
+— Returns geological map polygons at different scales. Use large when zoomed in, small when zoomed out. These return full polygon geometries with all attributes.
+GET https://macrostrat.org/api/v2/fossils?lat={lat}&lng={lng}&format=geojson_bare
+— Returns fossil collection sites from the Paleobiology Database linked to Macrostrat units. Each result includes taxa found, age, formation name.
+GET https://macrostrat.org/api/v2/columns?lat={lat}&lng={lng}&format=geojson_bare
+— Returns stratigraphic columns showing the vertical sequence of rock layers at a location. Useful for the "Learn More" educational cards.
+Macrostrat also serves vector map tiles at: https://tiles.macrostrat.org/carto/{z}/{x}/{y}
+— These include fault lines rendered from the underlying geological maps. Consider using these as a tile overlay on the map for the most efficient rendering of geological boundaries and faults across the viewport.
+
+Secondary — USGS Quaternary Faults (active/recent faults only, nationwide)
+GET https://earthquake.usgs.gov/arcgis/rest/services/haz/Qfaults/MapServer/21/query
+Parameters:
+where=1=1
+geometry={minLng},{minLat},{maxLng},{maxLat}
+geometryType=esriGeometryEnvelope
+inSR=4326
+outSR=4326
+outFields=fault_name,age,fault_type,dip_direction,slip_rate,symbology,fault_url,archive_pdf
+f=geojson
+returnGeometry=true
+This returns real multi-vertex polylines (NOT straight lines) for faults active in the last 2.6 million years. The symbology field contains both age and constraint info (e.g., "late Quaternary Well Constrained"). The fault_url links to the full USGS report. The archive_pdf links to archived detailed PDF reports. Use this for any fault that appears here — it has the most authoritative data on active faults.
+Tertiary — USGS Earthquake Catalog (recent seismic events)
+GET https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minlatitude={minLat}&maxlatitude={maxLat}&minlongitude={minLng}&maxlongitude={maxLng}&minmagnitude=2
+Shows earthquake epicenters. Optional layer the user can toggle. Good for showing that even "dead" faults sometimes have micro-seismic activity.
+Quaternary — Mindat.org API (mineral localities, requires free API key)
+GET https://api.mindat.org/localities/?latitude={lat}&longitude={lng}&radius=50
+Headers: Authorization: Token {MINDAT_API_KEY}
+Returns mineral collection localities with species lists. Use for "Mineral Deposit" markers. We can add API key support later — for MVP, skip this and use Macrostrat's lithology data to infer mineral-rich areas.
+
+GEOLOGY DATA SERVICE MODULE
+Create src/services/GeologyDataService.ts with these functions:
+typescript// Fetch all geological features within the current map viewport
+async function fetchGeologyForViewport(bounds: {
+  minLat: number, maxLat: number, minLng: number, maxLng: number
+}, zoomLevel: number): Promise<GeologyData>
+
+// Returns: { faultLines: FaultLine[], formations: Formation[], fossilSites: FossilSite[], earthquakes?: Earthquake[] }
+Viewport-based fetching rules:
+
+Query APIs when the map viewport changes (debounce 500ms after pan/zoom stops)
+Cache results by viewport tile (divide world into grid cells, cache per cell)
+At zoom level < 8, use Macrostrat small scale and skip USGS Qfaults (too many features)
+At zoom level 8-12, use Macrostrat medium scale + USGS Qfaults
+At zoom level > 12, use Macrostrat large scale + USGS Qfaults
+Merge fault data from both sources, deduplicating by proximity (if a Macrostrat fault line and USGS Qfaults line are within 500m of each other, prefer the USGS version since it has richer metadata)
+
+
+FAULT LINE RENDERING
+Render each fault as a react-native-maps Polyline using the ACTUAL coordinates from the GeoJSON response. These are multi-vertex polylines with dozens or hundreds of coordinate pairs that follow the real mapped fault trace. NEVER simplify these to 2-point straight lines.
+Styling by age/status:
+
+Active faults (Quaternary, < 2.6 Ma): Red, 2px width, solid line
+Recently inactive (Neogene/Miocene, 2.6-23 Ma — this includes Balcones): Orange, 2px width, dashed
+Ancient faults (Paleozoic/Mesozoic, > 23 Ma): Gray, 1.5px width, dotted
+All fault lines should be semi-transparent (opacity 0.7) so satellite imagery shows through
+On zoom in past level 14, increase line width to 3px
+
+Labeling:
+
+Show fault name labels along the line when zoom > 10
+Use small, white text with dark shadow for readability over satellite imagery
+Label should follow the angle of the fault line where possible
+
+
+INTERACTIVE CARDS — FAULT TAP BEHAVIOR
+When a user taps on a fault line polyline, show a Summary Card (bottom sheet, compact):
+┌─────────────────────────────────────┐
+│ [Fault Type Icon]                    │
+│ Balcones Fault Zone                  │
+│ Normal Fault • Inactive              │
+│                                      │
+│ Last Active: ~20 million years ago   │
+│              (Miocene Epoch)         │
+│                                      │
+│ Slip Rate: < 0.2 mm/yr              │
+│ Displacement: ~700-1,000 ft down    │
+│                                      │
+│ [ 🎓 Learn More ]                   │
+└─────────────────────────────────────┘
+Summary Card data mapping:
+
+Name: from fault_name (USGS) or unit_name/strat_name (Macrostrat)
+Fault Type: from fault_type field — Normal, Reverse, Strike-slip, Thrust, etc. Show an appropriate icon for each type (down-arrows for normal, opposing arrows for strike-slip, etc.)
+Status: Derive from age data. If last movement < 10,000 years = "Active". If 10,000 - 2.6Ma = "Potentially Active". If > 2.6 Ma = "Inactive". If > 50 Ma = "Ancient"
+Last Active: Convert age, t_age, or symbology field to human-readable format. Show both the number ("~20 million years ago") AND the geological period name ("Miocene Epoch"). For Quaternary faults, the USGS symbology field gives categories like "late Quaternary (< 130,000 years)"
+Slip Rate: from USGS slip_rate field if available
+Displacement: This is educational context we generate — see Learn More section below
+
+
+LEARN MORE — EXPANDED EDUCATIONAL CARD
+When the user taps "Learn More", expand to a full-screen or large bottom sheet card with rich educational content. This card should feel like a beautifully designed geology field guide entry.
+Structure of the Learn More card:
+┌─────────────────────────────────────┐
+│ ← Back                              │
+│                                      │
+│ BALCONES FAULT ZONE                  │
+│ Normal Fault System                  │
+│ Dallas → San Antonio, ~300 miles     │
+│                                      │
+│ ─── What Happened Here ───           │
+│ [2-3 paragraphs explaining the       │
+│  geological event in plain language.  │
+│  Written for a curious non-geologist │
+│  — think National Park sign level]   │
+│                                      │
+│ ─── How It Shapes the Land ───       │
+│ [How this fault/feature created the  │
+│  visible landscape. For Balcones:    │
+│  the escarpment, the transition from │
+│  flat Blackland Prairie to the       │
+│  rugged Hill Country, the 700ft      │
+│  elevation change]                   │
+│                                      │
+│ ─── Weather & Climate Impact ───     │
+│ [How the geological feature affects  │
+│  local weather. For Balcones: the    │
+│  escarpment forces moist Gulf air    │
+│  upward, creating the "Flash Flood   │
+│  Alley" effect. Rainfall drops from  │
+│  35"/yr east to 28"/yr west across   │
+│  just a few miles. The escarpment    │
+│  creates a microclimate boundary]    │
+│                                      │
+│ ─── Ecosystems & Plant Life ───      │
+│ [The ecological transition caused    │
+│  by the geology. For Balcones:       │
+│  Blackland Prairie (tallgrass,       │
+│  rich clay soil from eroded          │
+│  Cretaceous limestone) abruptly     │
+│  gives way to Edwards Plateau        │
+│  (live oak/juniper savanna on thin  │
+│  rocky soil over hard limestone).    │
+│  The Balcones Canyonlands are home  │
+│  to endangered Golden-cheeked       │
+│  Warbler found nowhere else]        │
+│                                      │
+│ ─── Water & Aquifers ───             │
+│ [How the geology affects water.      │
+│  For Balcones: the fault zone        │
+│  created the Edwards Aquifer, one   │
+│  of the most productive in the US.  │
+│  Water percolates through fractured │
+│  limestone and emerges at springs   │
+│  like Barton Springs and San Marcos │
+│  Springs along the fault line]      │
+│                                      │
+│ ─── Fun Facts ───                    │
+│ • The word "Balcones" comes from     │
+│   Spanish for "balconies" — early    │
+│   settlers saw the limestone cliffs  │
+│   as balconies overlooking the       │
+│   prairie                            │
+│ • MoPac (Loop 1) in Austin roughly  │
+│   follows the fault line             │
+│                                      │
+│ ─── Related Features Nearby ───      │
+│ [List of other geological features   │
+│  within 50 miles that are related]   │
+│                                      │
+│ 📎 Sources: USGS, BEG, Macrostrat   │
+└─────────────────────────────────────┘
+CRITICAL: How to generate the educational content
+The educational text in the Learn More cards should be generated using an AI API call. When the user taps "Learn More":
+
+Collect all available metadata about the feature from the API responses (fault name, type, age, lithology, location, formations on either side)
+Send a request to the Claude API (or our backend) with a prompt like:
+
+You are a geology educator writing a field guide entry for a mobile app. 
+The audience is curious adults and students, not geologists. 
+Write in clear, engaging language — think National Park interpretive sign quality.
+Use specific local details and concrete comparisons.
+
+Feature: {fault_name}
+Type: {fault_type}  
+Location: near {city}, {state} (lat: {lat}, lng: {lng})
+Age: {age_description}
+Formations: {adjacent_formation_names}
+Lithology: {rock_types}
+
+Write sections for:
+1. "What Happened Here" (2-3 paragraphs, the geological story)
+2. "How It Shapes the Land" (visible landscape effects)
+3. "Weather & Climate Impact" (how geology affects local weather patterns)
+4. "Ecosystems & Plant Life" (ecological transitions caused by geology)
+5. "Water & Aquifers" (how geology affects water systems)
+6. "Fun Facts" (3-4 interesting facts)
+
+Return as JSON with keys: whatHappened, landscape, weather, ecosystems, water, funFacts[]
+
+Cache the response so we don't re-generate for the same feature
+Show a loading skeleton while the content generates
+Store generated content in local SQLite/AsyncStorage so it persists across sessions
+
+If we cannot use AI generation initially, create a static JSON lookup file with pre-written educational content for the 50 most significant US geological features (Balcones Fault Zone, San Andreas, New Madrid Seismic Zone, Appalachian Thrust Faults, Yellowstone Caldera, etc.) and show a simpler card with just the API metadata for features not in the lookup.
+
+GEOLOGICAL POINTS OF INTEREST MARKERS
+Query Macrostrat for the current viewport and create POI markers from the data:
+Fossil Sites (tan/cream icon with trilobite):
+
+Source: Macrostrat /fossils endpoint
+Show when: any Paleobiology Database collection exists within viewport
+Card shows: taxa found, geological period, formation name
+
+Mineral Deposits (purple icon with crystals):
+
+Source: Macrostrat lithology data where lith contains: granite, pegmatite, metamorphic, volcanic, ore-bearing, or specific mineral-rich lithologies
+Later: Mindat.org API localities when we add API key
+Card shows: rock type, minerals likely present, formation age
+
+Geological Landmarks (orange icon with mountains):
+
+Source: Macrostrat formation boundaries where significant lithological or age contrasts exist (e.g., where a Cretaceous limestone meets a Precambrian granite = a major unconformity)
+Also: points where fault displacement creates visible topographic features (escarpments, scarps)
+Card shows: what makes this location geologically significant
+
+Springs & Water Features (blue icon):
+
+Source: derive from fault intersections with carbonate/limestone formations (springs commonly emerge along faults in limestone terrain)
+Card shows: aquifer name, flow rate if known, geological explanation
+
+Caves & Karst (dark icon with cave):
+
+Source: Macrostrat units where lithology is limestone/dolostone AND age is suitable for karst development
+Card shows: formation name, type of karst features expected
+
+
+IMPLEMENTATION PRIORITY
+Phase 1 (Now):
+
+GeologyDataService with Macrostrat geologic_units/map and USGS Qfaults queries
+Fault line polylines rendered from real GeoJSON coordinates
+Summary card on fault tap with data from API responses
+Basic Learn More card with static content for major features
+
+Phase 2:
+
+Macrostrat tile overlay for formation colors on the map
+Fossil site markers from Macrostrat /fossils
+AI-generated Learn More content
+Viewport-based dynamic loading with caching
+
+Phase 3:
+
+Mindat.org mineral localities
+Earthquake overlay
+Offline caching of geological data for fieldwork
+User contributions / field observations
+
+
+
+That prompt covers the full scope. A few things I'd emphasize when you paste it in:
+The most important fix is making sure the agent understands that the ArcGIS and Macrostrat endpoints return real polyline geometry — arrays of coordinate pairs that trace the actual fault. The agent's current approach of plotting [{lat: 30.0, lng: -97.5}, {lat: 31.5, lng: -98.0}] as a 2-point line is the root cause of that ugly yellow stripe. The real data will have 50-200 vertices per fault segment.
+The educational content architecture using AI generation is the cleanest path for the Learn More cards, since there are thousands of geological features and you can't pre-write content for all of them. But starting with a static lookup for the top 50 features lets you ship something polished while the AI pipeline gets built.
+Want me to also write the static educational content JSON for the Balcones Fault Zone as a template the agent can follow for the other major features?

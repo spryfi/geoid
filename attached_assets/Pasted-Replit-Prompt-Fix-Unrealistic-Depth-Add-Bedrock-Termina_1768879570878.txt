@@ -1,0 +1,139 @@
+Replit Prompt: Fix Unrealistic Depth - Add Bedrock Terminator & Depth Cap
+
+Objective: The "What's Under My Feet?" screen is currently displaying geologically impossible depths (e.g., 25,000+ feet of sedimentary rock). You must fix this by implementing a system that detects the top of the Precambrian basement rock and terminates the list, adding a special "Bedrock" visual at the bottom. This will make the visualization scientifically accurate and realistic.
+
+
+PROMPT START
+
+I need you to perform a critical data-filtering refactor for the WhatsUnderMyFeetScreen component. The Macrostrat API is returning data that extends far beyond the realistic geological depth for most locations. We must filter this data to stop at the basement rock.Part 1: Implement Bedrock Detection Logic
+
+Step 1.1: Create the isBedrock Helper FunctionIn your lib/geology_helpers.js file, add a function to identify crystalline basement rock. Bedrock is typically Precambrian in age or described as igneous/metamorphic.JavaScript
+
+
+export function isBedrock(layer) {
+  if (!layer) return false;
+
+  // Check 1: Age (Precambrian is older than ~541 million years)
+  if (layer.age_ma && layer.age_ma > 541) {
+    return true;
+  }
+
+  // Check 2: Lithology Keywords
+  const lithology = (layer.lithology || '').toLowerCase();
+  const bedrockLithologies = ['igneous', 'metamorphic', 'crystalline', 'granite', 'gneiss', 'schist'];
+  if (bedrockLithologies.some(keyword => lithology.includes(keyword))) {
+    return true;
+  }
+  
+  // Check 3: Formation Name Keywords
+  const name = (layer.formation_name || '').toLowerCase();
+  if (name.includes('basement')) {
+    return true;
+  }
+
+  return false;
+}
+
+
+Part 2: Filter the Layer Data Before Rendering
+
+In your WhatsUnderMyFeetScreen component, before you map over the layers to render them, you must process the array from the API.Step 2.1: Process the API ResponseJavaScript
+
+
+import { isBedrock } from './lib/geology_helpers';
+
+// Inside your main component, after fetching the data...
+const processLayers = (apiLayers) => {
+  const MAX_DEPTH_FEET = 20000; // Hard cap at ~6km as a fallback
+  let cumulativeDepth = 0;
+  
+  // Find the index of the first bedrock layer
+  const bedrockIndex = apiLayers.findIndex(layer => isBedrock(layer));
+
+  let displayLayers = apiLayers;
+
+  // If bedrock is found, slice the array to only include layers above it
+  if (bedrockIndex !== -1) {
+    displayLayers = apiLayers.slice(0, bedrockIndex);
+  }
+
+  // Filter out any layers that go beyond our hard depth cap
+  const finalLayers = [];
+  for (const layer of displayLayers) {
+    const thicknessFeet = layer.thickness_meters * 3.28084;
+    if (cumulativeDepth + thicknessFeet > MAX_DEPTH_FEET) {
+      break; // Stop adding layers if we exceed the max depth
+    }
+    finalLayers.push(layer);
+    cumulativeDepth += thicknessFeet;
+  }
+
+  // Add our special bedrock terminator at the end
+  finalLayers.push({
+    id: 'bedrock_terminator',
+    formation_name: 'Precambrian Basement Rock',
+    epoch: 'Over 541 million years old',
+    thickness_meters: 200, // Give it a substantial visual height
+    isTerminator: true, // Custom flag
+  });
+
+  return finalLayers;
+};
+
+// Then use it:
+const processedLayers = processLayers(dataFromApi);
+setLayers(processedLayers);
+
+
+Part 3: Create the BedrockTerminator Component
+
+Create a new component for the final bedrock layer. It should look distinct and signify the end of the column.Step 3.1: Create the componentJSX
+
+
+const BedrockTerminator = ({ height }) => {
+  return (
+    <View style={{ height, backgroundColor: '#2c3e50' }}>
+      {/* Use a dark, crystalline SVG pattern or a solid dark color */}
+      <View style={styles.centerContent}>
+        <Text style={styles.bedrockTitle}>You've Reached Bedrock</Text>
+        <Text style={styles.bedrockSubtitle}>The ancient foundation of the continent.</Text>
+      </View>
+    </View>
+  );
+};
+
+
+Step 3.2: Use it in your listIn your FlatList or ScrollView, check for the isTerminator flag.JSX
+
+
+// Inside your map/FlatList renderItem function
+if (item.isTerminator) {
+  return <BedrockTerminator height={calculateAdaptiveHeight(item.thickness_meters)} />;
+} else {
+  return <GeologicalLayer layer={item} ... />;
+}
+
+
+Final Verification Checklist
+
+
+
+
+Hard Stop: The list MUST stop and no longer scroll to 25,000+ feet.
+
+
+
+
+Bedrock Terminator: The very last item in the list MUST be the special "Precambrian Basement Rock" component with its unique dark, crystalline appearance.
+
+
+
+
+Realistic Depth: The total depth should now be geologically reasonable for the given location (e.g., under 20,000 feet).
+
+
+
+
+No Errors: The app should handle cases where the API does not return a clear bedrock layer by falling back to the MAX_DEPTH_FEET cap.
+
+Please implement this critical data validation and UI enhancement now.

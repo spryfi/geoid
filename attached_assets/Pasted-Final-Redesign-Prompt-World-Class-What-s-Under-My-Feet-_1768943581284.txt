@@ -1,0 +1,105 @@
+Final Redesign Prompt: World-Class "What's Under My Feet?"
+
+Objective: This is a major redesign to transform the "What's Under My Feet?" screen into a world-class, interactive, and educational experience. The current version has layout, data, and interaction issues that we will now fix.
+
+1. Complete Layout Overhaul
+
+A. Remove the Bottom Card: The Stratigraphic Column summary card at the bottom is redundant and shows incorrect data (e.g., 43,068 ft depth). Delete this component entirely.
+
+B. Implement a Dynamic Single-Page Layout: The goal is to show all layers on one screen without scrolling, if possible. Use the following logic:
+
+•
+If layers.length <= 8: Calculate the height of each layer so they all fit perfectly within the available screen space. Use the square-root scaling algorithm, but normalize the total height to fit the view.
+
+•
+If layers.length > 8: Render only the first 7 layers and then a "See More" button. When tapped, the view should expand to show all layers in a ScrollView.
+
+C. Rename Top Layer: The top layer, currently "Surface Soil & Alluvium," should be renamed to "Caliche / Topsoil" for this region (Central Texas).
+
+2. Interactive Tappable Layers
+
+Problem: The fun facts are displayed directly on the layer, making it cluttered.
+
+Solution: Make each layer a tappable button that opens a modal with details.
+
+A. GeologicalLayer Component:
+
+•
+This component should now only display the Formation Name, Epoch, and Thickness.
+
+•
+Wrap the entire component in a TouchableOpacity or Pressable.
+
+•
+On onPress, it should open a FactModal component, passing the specific layer's data to it.
+
+B. FactModal Component:
+
+•
+This is a new modal component that appears when a layer is tapped.
+
+•
+It should display:
+
+•
+Formation Name (as a title)
+
+•
+Epoch
+
+•
+Thickness
+
+•
+The unique, fact-based description (from the getFormationDescription function).
+
+•
+A close button.
+
+
+
+3. Clickable K-T Boundary Marker
+
+Problem: The K-T boundary is just a visual marker.
+
+Solution: Make it an interactive, educational element.
+
+A. KTBoundary Component:
+
+•
+This component (the dashed red line and dinosaur skull icon) should also be a TouchableOpacity.
+
+•
+On onPress, it should open a separate KTModal.
+
+B. KTModal Component:
+
+•
+This new modal should display the following 2nd-grade level explanation:
+
+
+What is the K-T Boundary?Imagine a giant space rock, bigger than a mountain, hitting the Earth! It made a huge explosion that changed the weather all over the world.This was very bad for the dinosaurs, and they all disappeared. This red line shows the layer of dust and rock from that explosion.Everything below this line is from the time of dinosaurs, and everything above it is from the world after they were gone.
+
+4. Data & Logic Refinements
+
+A. Enforce Depth Cap: Re-implement the getMaxDepthForLocation function. For the Buda, TX area (30.06, -97.77), the maximum depth must be capped at ~6,000 feet. Filter out any layers from the API that are deeper than this.
+
+B. Improved Texture Mapping: Use a more accurate getTextureForLithology function. The current one is not differentiating enough.
+
+JavaScript
+
+
+// Example of a better mapping
+function getTextureForLithology(lithology) {
+  if (lithology.includes('sand') || lithology.includes('sandstone')) return 'sandstone_pattern';
+  if (lithology.includes('limestone') || lithology.includes('chalk')) return 'limestone_pattern';
+  if (lithology.includes('shale')) return 'shale_pattern';
+  if (lithology.includes('clay') || lithology.includes('marl')) return 'clay_pattern';
+  if (lithology.includes('tuff')) return 'tuff_pattern';
+  if (lithology.includes('caliche')) return 'soil_pattern';
+  return 'default_rock_pattern'; // A generic gray pattern
+}
+
+
+This comprehensive redesign will create a highly interactive, educational, and accurate feature that will be a true hallmark of the GeoID Pro app.
+

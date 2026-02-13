@@ -1,0 +1,192 @@
+The mockup (Image 1) is gorgeous — those tapered widths, rock textures, and the K-T boundary marker make it feel like a real geological cross-section. Your current output (Image 2) is pulling real Macrostrat data correctly, but it's rendering as a flat table instead of a visual column. That's purely a rendering/UX problem — the data is fine.
+The good news: Macrostrat's API actually returns everything you need to build the mockup version. The data includes lithology types, which tell you what texture to render and how to vary the width. Here's a prompt for the agent:
+
+
+"What's Under My Feet?" — Complete UI/UX Rewrite
+The current implementation renders stratigraphic data as flat colored rectangles that look like a boring spreadsheet. We need this to look like an actual geological cross-section illustration — like a diagram you'd see in a geology textbook or a National Park interpretive sign.
+Reference the design mockup for the visual target: layers have VARYING WIDTHS based on rock hardness, each lithology type has a TEXTURE PATTERN (brick pattern for limestone, cross-hatching for sandstone, horizontal lines for shale, speckles for ignite/volcanic), and special markers appear for significant geological boundaries.
+DATA SOURCE
+Continue using Macrostrat but switch to the LONG response format for richer data:
+GET https://macrostrat.org/api/v2/units?lat={lat}&lng={lng}&response=long&format=json
+This returns an array of geological units at that location, each with:
+
+unit_name / strat_name_long — formation name
+Lith — array of lithologies like [{name: "limestone", type: "sedimentary", prop: 0.8}, {name: "dolostone", type: "sedimentary", prop: 0.2}]
+min_thick / max_thick — thickness range in meters
+b_age / t_age — bottom and top age in millions of years (Ma)
+b_interval / t_interval — period names ("Cretaceous", "Miocene")
+color — hex color for the unit
+outcrop — whether it outcrops at surface
+pbdb_collections — number of fossil collections from Paleobiology Database
+clat / clng — column location
+environ — depositional environment (marine, terrestrial, etc.)
+econs — economic uses/resources
+notes / descrip — description text
+
+Also query the stratigraphic column for a complete vertical section:
+GET https://macrostrat.org/api/v2/columns?lat={lat}&lng={lng}&response=long&format=json
+And for additional unit detail when a user taps a layer:
+GET https://macrostrat.org/api/v2/units?unit_id={id}&response=long&format=json
+UNIT CONVERSION
+Display depths in FEET by default (this is a US-focused consumer app). Convert Macrostrat's meter values: multiply by 3.281. Show a toggle in the header to switch between feet and meters. Use the average of min_thick and max_thick for display thickness. Calculate cumulative depth for the left-side depth labels.
+RENDERING — SVG-BASED CROSS-SECTION
+Render the entire column as an SVG (using react-native-svg) inside a ScrollView. This gives us full control over shapes, patterns, and textures. DO NOT use simple View rectangles with background colors.
+Layer Shape — Varying Width by Rock Hardness:
+Each layer should be rendered as an SVG polygon/path, NOT a rectangle. The width varies based on the PRIMARY LITHOLOGY to visually communicate rock resistance:
+HARDNESS WIDTH MAPPING (percentage of max column width):
+
+Hard/Resistant (wide layers):
+  granite, gneiss, quartzite, basalt → 95-100%
+  limestone, dolostone, marble → 85-95%
+  
+Medium (moderate width):
+  sandstone, conglomerate → 70-85%
+  siltstone, tuff → 60-75%
+  
+Soft/Erodible (narrow layers):  
+  shale, mudstone, claystone → 50-65%
+  chalk, marl → 55-65%
+  soil, alluvium, caliche → 40-55%
+The LEFT edge of every layer is aligned (straight vertical line with depth markers). The RIGHT edge varies based on width, creating the tapered/stepped profile seen in the mockup. Transitions between layers of different widths should have a slight diagonal (not a sharp step) to look natural — use a short angled line connecting the wider layer to the narrower one.
+Layer Height — Proportional to Thickness:
+Each layer's vertical height in the SVG should be proportional to its actual thickness. However, apply a logarithmic or square-root scale so that very thick formations (like the 1299ft Frio Formation) don't dominate the entire view while very thin ones (49ft Wellborn) disappear.
+Suggested scaling: displayHeight = Math.max(60, Math.sqrt(thicknessInFeet) * 15)
+This ensures every layer is at least 60px tall (readable) but thick formations are visually larger. The depth labels on the left axis should reflect ACTUAL cumulative depth, not the scaled display height.
+Lithology Texture Patterns:
+Define SVG <pattern> elements for each major lithology type. These are small repeating tile patterns drawn inside each layer polygon:
+LIMESTONE / DOLOSTONE:
+  Brick-like pattern — horizontal lines with offset vertical lines
+  creating a stacked brick appearance. Use slightly darker shade 
+  of the layer's base color for the lines.
+  
+SANDSTONE:
+  Stipple/dot pattern — scattered small dots at random-ish positions.
+  Can also use tiny diagonal cross-hatching lines for cross-bedded 
+  sandstone.
+  
+SHALE / MUDSTONE:
+  Thin horizontal dashed lines, closely spaced, suggesting lamination.
+  Lines should be subtle, slightly darker than base color.
+  
+CONGLOMERATE:
+  Scattered small circles/ovals of varying sizes (pebbles) on a 
+  sandstone-dot background.
+  
+GRANITE / IGNEOUS:
+  Random small triangles and irregular polygons (crystal shapes)
+  in 2-3 slightly different colors suggesting different minerals.
+  
+TUFF / VOLCANIC:
+  Small v-shapes or chevrons scattered (suggesting volcanic fragments)
+  with occasional larger angular shapes.
+  
+CHALK:
+  Very fine dots, almost invisible, with a slightly rough edge to
+  the layer boundaries.
+  
+SOIL / ALLUVIUM / CALICHE:
+  Irregular organic-looking squiggles and root-like lines near the top.
+  Transition to small dots lower in the layer.
+  
+METAMORPHIC (schist, gneiss):
+  Wavy horizontal lines suggesting foliation.
+  
+DEFAULT/UNKNOWN:
+  Subtle diagonal hatching at 45 degrees.
+The pattern fills should be SUBTLE — they add texture without overwhelming the formation name text. Use the pattern at about 15-25% opacity over the base color.
+Base Colors:
+Use the color field from Macrostrat as the base fill color for each layer. These are standard geological map colors (greens for Cretaceous, yellows for Tertiary, grays for Paleozoic, etc.) If the Macrostrat color is missing or too light for white text, derive a suitable color from the lithology type:
+limestone: #C4B99A (warm tan)
+sandstone: #E8D5A3 (sandy yellow)  
+shale: #8B7355 (brown)
+granite: #D4C5B9 (pinkish gray)
+basalt: #4A4A4A (dark gray)
+tuff: #BFA87A (olive tan)
+chalk: #F0EDE0 (near white — use dark text)
+soil: #6B5B3E (dark brown)
+Text on Layers:
+Each layer displays:
+
+Formation name (bold, left-aligned, inside the layer) — from strat_name_long or unit_name
+Geological period (smaller text below name) — from t_interval
+Thickness (right-aligned) — calculated from min_thick/max_thick, displayed in current unit (ft/m)
+
+Text color: white with subtle drop shadow for dark backgrounds, dark brown for light backgrounds. Determine automatically based on background luminance.
+SPECIAL MARKERS & BOUNDARIES
+K-T Boundary (K-Pg Boundary):
+The Cretaceous-Paleogene boundary is at 66 Ma. Scan through the units and find where b_age crosses 66 Ma (the unit whose bottom age is > 66 Ma and whose top age is < 66 Ma, OR the boundary between a Cretaceous and a Paleogene unit). Draw a dashed red/orange horizontal line across the full column width at that depth, with a label "K-Pg Boundary" and a small dinosaur skull icon. This is one of the most famous geological boundaries and should always be highlighted if present in the column.
+Other Major Boundaries to Auto-Detect:
+Scan the unit ages and mark these if they fall within the column:
+
+Great Unconformity (~500-1000 Ma gap) — where Cambrian sits directly on Precambrian with a huge time gap. Dashed line with label.
+Permian-Triassic boundary (252 Ma) — "The Great Dying" — largest mass extinction. Red dashed line.
+End-Ordovician (445 Ma) — major extinction. Dashed line.
+Major unconformities — wherever there is a gap of >50 Ma between adjacent units (unit N's b_age minus unit N+1's t_age > 50), draw a wavy line suggesting an erosional surface and label "~X million year gap"
+
+Aquifer Indicator:
+If a unit's lithology is limestone, dolostone, or sandstone AND it's a known aquifer-bearing formation (check if econs mentions water, or if formation name contains "Edwards", "Ogallala", "Trinity", or other known aquifer names), show a water droplet icon on the right side of that layer.
+Fossil Indicator:
+If pbdb_collections > 0 for a unit, show a small fossil icon (ammonite, trilobite, or leaf depending on age) on the right side. Tap to see what fossils have been found.
+Mineral/Resource Indicator:
+If econs contains economic resource data (oil, gas, coal, minerals), show a small relevant icon (oil drop, gem, pickaxe).
+GROUND SURFACE HEADER
+At the top of the column, before the first layer:
+
+Show "Ground Surface" with a decorative grass/terrain line
+Show the coordinates (lat, lng)
+Show the current location name (reverse geocode)
+Show surface elevation (from device GPS or a DEM API)
+
+BEDROCK FOOTER
+At the bottom of the column, after the deepest unit:
+
+Show "You've Reached Bedrock" (or "Basement Rock" or "Continental Crust")
+Show "The ancient foundation of the continent"
+Show the age: "Over {bottom unit b_age} million years old"
+Use a dark, textured background (granite-like)
+This IS working in the current version — keep it
+
+TAP INTERACTION — LAYER DETAIL CARD
+When a user taps on any layer, show a bottom sheet card:
+┌─────────────────────────────────────┐
+│ [Lithology texture swatch]           │
+│                                      │
+│ Lagarto Formation                    │
+│ Miocene Epoch • 5.3 - 11.6 Ma       │
+│                                      │
+│ Thickness: 984 ft (300 m)            │
+│ Rock Type: Sandstone, Clay           │
+│ Environment: Coastal Plain           │
+│                                      │
+│ 💧 Edwards Aquifer (confined)       │
+│ 🦴 12 fossil collections            │
+│                                      │
+│ This formation was deposited in a    │
+│ shallow coastal environment when     │
+│ the Gulf of Mexico extended further  │
+│ inland than today...                 │
+│                                      │
+│ [ 🎓 Learn More ]  [ 🗺 See on Map ]│
+└─────────────────────────────────────┘
+The brief description can come from Macrostrat's notes/descrip fields. If those are empty, generate a 2-sentence description from the lithology + environment + age data.
+Learn More expands to a full educational card (same pattern as the fault Learn More cards) with sections on: how this rock formed, what the world looked like when it was deposited, what fossils are found in it, and how it affects the landscape today.
+See on Map switches to the Explore map tab and highlights the surface extent of this formation (query Macrostrat's geologic_units/map endpoint for that formation's polygon).
+SCROLL BEHAVIOR
+The column should be vertically scrollable. As the user scrolls down, they're "drilling deeper." The depth labels on the left should update smoothly. Consider a parallax effect where the background color gradually gets darker as you go deeper, suggesting increasing depth underground.
+Add a subtle "scroll to explore deeper" hint animation at the bottom of the initial viewport.
+REFRESH / LOCATION
+Keep the refresh button (top right) that re-queries for current GPS location. Also allow the user to manually enter coordinates or search for a location name to see the column at any point in the US — not just their current location. This is great for comparing: "what's under the Grand Canyon vs what's under me?"
+IMPLEMENTATION NOTES
+
+Use react-native-svg for the entire column rendering
+The SVG patterns for lithology textures should be defined once in a <Defs> block and referenced by <Pattern> id
+Each layer is a <Path> or <Polygon> element filled with both the base color and the pattern overlay
+Make the column Pressable per-layer for tap detection
+Use react-native-reanimated for smooth bottom sheet animations on tap
+Cache Macrostrat responses in AsyncStorage so revisiting the same location is instant
+Show the Macrostrat CC BY 4.0 attribution at the bottom (this IS required for their license — the current version has it, keep it)
+
+
+
+That should get the agent from the boring rectangles to something much closer to your mockup. The key things that will make the biggest visual difference are the varying widths by lithology and the SVG texture patterns — those two changes alone transform it from a data table into something that looks like a real geological illustration.
+The Macrostrat data you're already pulling has everything you need — the Lith array tells you exactly what texture and width to use for each layer. The agent just isn't using that data visually right now.

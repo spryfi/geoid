@@ -1,0 +1,104 @@
+Replit Prompt: Critical Fixes for Identification Workflow
+
+Objective: To fix critical bugs in the rock identification workflow, ensuring location-based accuracy, correct Pro tier recognition, and intelligent user interaction.
+
+
+
+
+1. Fix Pro Tier Recognition (Highest Priority)
+
+•
+Problem: The app incorrectly shows "FREE TIER" and "Upgrade" prompts for Pro users.
+
+•
+Fix:
+
+•
+Ensure the user's subscription status is correctly checked upon app launch and before any identification.
+
+•
+When user.isPro is true, all UI elements related to the free tier must be hidden. This includes the "FREE TIER" badge in the header and any "Upgrade to Pro" sections at the bottom of the screen.
+
+•
+The Pro identification results (specific formation names) must be unlocked.
+
+
+
+2. Implement Location-Constrained AI Identification (Critical Accuracy Fix)
+
+•
+Problem: The AI is suggesting rock types (e.g., Granite) that are geologically impossible for the user's location, leading to incorrect identifications with high confidence.
+
+•
+Fix: The identification workflow must be changed to the following sequence:
+
+Example Meta-Prompt for AI:
+
+
+"You are a geology expert. The user is at a location where the only possible rock formations are [list of formations from Macrostrat]. Based on the user's photo, which of these formations is visible? You MUST choose your answer ONLY from the provided list. Do not suggest any rock type not on this list."
+
+1.
+Step 1: Get Location Data First. Before calling any vision AI, query the Macrostrat API (or other geological data source) using the user's GPS coordinates.
+
+2.
+Step 2: Create a Valid Possibilities List. The Macrostrat query will return a list of all rock formations and types known to exist at that location. Create an array of these valid names (e.g., ['Austin Chalk', 'Edwards Limestone', 'Walnut Clay']).
+
+3.
+Step 3: Constrain the AI. Pass this list of valid possibilities to the GPT-4 Vision API as part of the system prompt. The prompt must explicitly forbid the AI from guessing outside this list.
+
+
+
+3. Differentiate Free vs. Pro Identification Logic
+
+•
+Problem: The app provides a generic "Unknown Regional Formation" for Pro users, which is not acceptable.
+
+•
+Fix:
+
+•
+Free Tier: The AI can identify the general rock type (e.g., "Limestone"). The list passed to the AI can be of general types.
+
+•
+Pro Tier: The AI must identify the specific formation name (e.g., "Austin Chalk"). The list passed to the AI must be the specific formation names from Macrostrat.
+
+
+
+4. Implement Smart Re-Photo Request Logic
+
+•
+Problem: If the AI is uncertain, it gives up instead of helping the user.
+
+•
+Fix:
+
+Example Re-Photo Prompts:
+
+
+•
+"I can see layered rock, but it's too close. Can you take a photo from about 20 feet away to show how the layers relate to each other?"
+
+•
+"The lighting is very bright. Can you take a photo from an angle where the sun is behind you?"
+
+•
+"I can see the rock type, but not the overall structure. Please take another photo that includes the ground and the top of the outcrop."
+
+
+
+•
+If the AI's confidence is low even after being constrained, it should not just fail. It should return a specific, actionable request for the user.
+
+•
+The AI should be prompted to suggest a better photo based on what it sees.
+
+
+
+
+
+
+Quick Copy-Paste for Replit
+
+
+"CRITICAL FIXES: (1) Fix Pro tier recognition: if user is Pro, hide all 'Free Tier' and 'Upgrade' UI. (2) Implement Location-Constrained AI: Before calling GPT-4 Vision, query Macrostrat for the user's GPS to get a list of valid local formations. Pass this list to the AI and strictly forbid it from suggesting anything not on the list. (3) For Pro users, the AI must return the specific formation name (e.g., 'Austin Chalk'), not a generic rock type. (4) If the AI is uncertain, it must ask the user for a specific new photo (e.g., 'zoom out', 'change angle'), not just fail."
+

@@ -1,0 +1,199 @@
+PROMPT START
+
+I need you to configure this app for development testing mode where ALL Pro features are unlocked. This will allow me to fully test every feature before release. Please make the following changes:
+
+1. Create a Development Mode Configuration File
+
+Create a new file lib/config/app_config.dart:
+
+Plain Text
+
+
+class AppConfig {
+  // SET TO TRUE FOR TESTING - Change to FALSE before App Store submission
+  static const bool isDevMode = true;
+  
+  // When isDevMode is true, all Pro features are unlocked
+  static bool get isProUser => isDevMode || _actualSubscriptionStatus;
+  
+  static bool _actualSubscriptionStatus = false;
+  
+  static void setSubscriptionStatus(bool status) {
+    _actualSubscriptionStatus = status;
+  }
+}
+
+
+2. Update All Pro Feature Checks
+
+Find every place in the code where you check if the user has a Pro subscription and replace those checks with AppConfig.isProUser. Import the config file where needed.
+
+3. Create a PRO Badge Widget
+
+Create lib/widgets/pro_badge.dart:
+
+Plain Text
+
+
+import 'package:flutter/material.dart';
+
+class ProBadge extends StatelessWidget {
+  const ProBadge({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE07856),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Text(
+        'PRO',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+}
+
+
+4. Add PRO Badge to These Screens
+
+Add the ProBadge widget to the following screens (in the AppBar or next to the title):
+
+•
+Results Screen (next to the identified rock name)
+
+•
+"What's Under My Feet?" screen (in the app bar title area)
+
+•
+Deep Dive sections when expanded
+
+•
+Explore Nearby screen (if it has Pro features)
+
+Example for AppBar:
+
+Plain Text
+
+
+AppBar(
+  title: Row(
+    children: [
+      const Text("What's Under My Feet?"),
+      const SizedBox(width: 8),
+      const ProBadge(),
+    ],
+  ),
+)
+
+
+5. Bypass Paywalls in Dev Mode (But Keep the Code)
+
+Do NOT delete any paywall code. Instead, wrap paywall triggers so they're skipped in dev mode:
+
+Plain Text
+
+
+void attemptProFeature(BuildContext context, VoidCallback onAccess) {
+  if (AppConfig.isDevMode) {
+    onAccess(); // Skip paywall in dev mode
+    return;
+  }
+  
+  // Normal paywall logic for production
+  if (!AppConfig.isProUser) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => PaywallScreen()));
+  } else {
+    onAccess();
+  }
+}
+
+
+6. Add a Dev Mode Banner
+
+Create lib/widgets/dev_mode_banner.dart:
+
+Plain Text
+
+
+import 'package:flutter/material.dart';
+import '../config/app_config.dart';
+
+class DevModeBanner extends StatelessWidget {
+  const DevModeBanner({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    if (!AppConfig.isDevMode) return const SizedBox.shrink();
+    
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      color: Colors.amber,
+      child: const Text(
+        '🔧 DEV MODE - All Pro Features Enabled',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
+        ),
+      ),
+    );
+  }
+}
+
+
+Add this banner to the bottom of your main Scaffold or in the Settings screen.
+
+7. Verify These Features Work Without Restrictions:
+
+•
+"What's Under My Feet?" geological cross-section
+
+•
+Deep Dive (all 4 levels: Tell Me More → More Details → Even More → Expert Level)
+
+•
+Smart Context Mode (location-aware identification)
+
+•
+Offline data caching
+
+•
+All identification features
+
+8. Summary Table
+
+After these changes, the app should behave like this:
+
+Feature
+Dev Mode (Testing)
+Production
+All Pro Features
+✅ Unlocked
+Requires subscription
+PRO Badges
+✅ Visible
+Visible for Pro users
+Paywalls
+⏭️ Bypassed
+Active
+Dev Banner
+✅ Visible
+Hidden
+
+
+
+
+Please implement all of these changes now.
+
+PROMPT END
+

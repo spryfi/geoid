@@ -1,0 +1,121 @@
+Comprehensive Accuracy Fix for "What's Under My Feet?"
+
+Objective: Fix two critical accuracy issues: (1) Repetitive, generic descriptions for each geological layer, and (2) Inaccurate depth-to-bedrock that shows sedimentary layers extending to impossible depths.
+
+Part 1: Unique, Fact-Based Descriptions
+
+Problem: Every layer currently says "A greenhouse world with crocodiles in the Arctic..." This is a placeholder and must be replaced with unique, accurate facts for each specific formation.
+
+Solution: Implement a new function getFormationDescription(formationName) that returns a unique, fact-based description for each formation. This function will act as a lookup table (a Map or switch statement is fine). If a formation is not in the map, return a default but informative message like "A thick layer of sedimentary rock from the [Epoch] period."
+
+Example getFormationDescription Logic:
+
+JavaScript
+
+
+function getFormationDescription(formationName) {
+  const descriptions = {
+    'Cook Mountain Formation': 'A marine formation known for its fossiliferous marls, deposited during a time of high sea levels.',
+    'Sparta Formation': 'A major freshwater aquifer composed of sand and clay, formed by ancient river systems.',
+    'Weches Formation': 'Rich in glauconite, giving it a distinct greenish color. Formed in a shallow marine environment.',
+    'Queen City Formation': 'A significant sand-rich formation that often contains lignite (low-grade coal) seams.',
+    'Reklaw Formation': 'A mix of marine clay and sand, marking a transition in sea level during the Eocene.',
+    'Carrizo Sand': 'A major aquifer known for its clean, high-quality water, representing a massive ancient river delta.',
+    'Wilcox Group': 'A thick sequence of sand, silt, and clay containing important oil, gas, and coal resources.',
+    'Midway Group': 'The first deposits after the dinosaur extinction, containing evidence of the early Cenozoic recovery.',
+    'Navarro Group': 'The last major deposits of the dinosaur era, often containing marine reptile fossils.',
+    'Taylor Marl': 'A thick layer of chalky marl deposited in a deep, quiet sea during the late Cretaceous.',
+    'Austin Chalk': 'Famous for its natural fractures, making it a major oil and gas reservoir.',
+    'Eagle Ford Shale': 'One of the most productive shale oil and gas plays in the world.',
+    'Buda Limestone': 'A dense, hard limestone that forms a key marker bed for geologists in Texas.',
+    'Del Rio Clay': 'A soft, easily eroded clay layer found beneath the Buda Limestone.',
+    'Georgetown Formation': 'A mix of limestone and marl, known for its abundant ammonite fossils.',
+    'Edwards Formation': 'A massive, cavernous limestone that forms the primary Edwards Aquifer, one of the most productive in the world.',
+    'Glen Rose Formation': 'Famous for its dinosaur tracks, including the Paluxy River tracks, preserved in ancient tidal flats.',
+    'Travis Peak Formation': 'A thick sequence of sand and conglomerate, representing ancient river and delta deposits.',
+    'Sligo Formation': 'A major oil-producing reef system in the deep subsurface of the Gulf Coast.',
+    'Hosston Formation': 'A deep, freshwater-bearing sandstone that is a target for water wells.',
+    // Add more as needed
+  };
+
+  for (const key in descriptions) {
+    if (formationName.includes(key)) {
+      return descriptions[key];
+    }
+  }
+  return `A layer of sedimentary rock from the ${getEpoch(formationName)} period.`;
+}
+
+
+Part 2: Location-Aware Depth Cap
+
+Problem: The app is showing 15,000+ feet of sedimentary layers at a location where the actual depth to basement rock is ~4,800 feet. This is a major accuracy failure.
+
+Solution: Implement a getMaxDepthForLocation(latitude, longitude) function that returns a realistic maximum depth based on the user's geological province. This prevents the app from displaying impossibly deep data from the Macrostrat API.
+
+getMaxDepthForLocation Logic:
+
+1.
+Define Geological Provinces: Create simple bounding boxes for key geological regions in Texas.
+
+2.
+Return Max Depth: Based on the user's coordinates, return the appropriate maximum depth.
+
+Example Code:
+
+JavaScript
+
+
+function getMaxDepthForLocation(latitude, longitude) {
+  // Bounding box for Central Texas / Balcones Fault Zone
+  const centralTexas = {
+    north: 31.5,
+    south: 29.0,
+    west: -100.0,
+    east: -97.0,
+  };
+
+  // Bounding box for the deep Gulf Coast Basin
+  const gulfCoast = {
+    north: 30.0,
+    south: 26.0,
+    west: -99.0,
+    east: -94.0,
+  };
+
+  if (
+    latitude < centralTexas.north &&
+    latitude > centralTexas.south &&
+    longitude < centralTexas.east &&
+    longitude > centralTexas.west
+  ) {
+    return 6000; // Max depth in feet for Central Texas
+  }
+
+  if (
+    latitude < gulfCoast.north &&
+    latitude > gulfCoast.south &&
+    longitude < gulfCoast.east &&
+    longitude > gulfCoast.west
+  ) {
+    return 25000; // Allow deeper results for the true Gulf Coast
+  }
+
+  return 15000; // Default max depth for other areas
+}
+
+
+Part 3: Implementation in the Main Component
+
+1.
+Fetch Data: When you call the Macrostrat API, also call getMaxDepthForLocation().
+
+2.
+Filter Data: Before rendering, filter the API results. Discard any layers whose top_depth is greater than the maxDepth for that location.
+
+3.
+Render Bedrock: If the filtered list is shorter than the original, it means you've hit the cap. Render the special "Bedrock Terminator" component at the bottom of the list.
+
+4.
+Update Descriptions: In your rendering loop, call getFormationDescription() for each layer instead of using a generic message.
+

@@ -1,0 +1,170 @@
+PROMPT START
+
+I need you to perform a major refactor of the WhatsUnderMyFeetScreen to fix two critical bugs: incorrect layer scaling and slow performance. Follow these instructions precisely.Part 1: Fix Slow Performance with CustomPainter Patterns
+
+The 10-15 second loading time is unacceptable. It is caused by loading large, high-resolution PNG files for textures. We will replace them with lightweight, instantly-rendering patterns drawn with a CustomPainter.Step 1.1: Create the RockPatternPainterCreate a new file lib/widgets/rock_pattern_painter.dart. This painter will draw different patterns based on the rock type.Plain Text
+
+
+import 'package:flutter/material.dart';
+import 'dart:math';
+
+enum LithologyPattern { sandstone, shale, limestone, clay, tuff, soil, generic }
+
+class RockPatternPainter extends CustomPainter {
+  final LithologyPattern pattern;
+  final Color color;
+
+  RockPatternPainter({required this.pattern, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..strokeWidth = 1.5;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), Paint()..color = color);
+
+    switch (pattern) {
+      case LithologyPattern.sandstone:
+        paint.color = Colors.black.withOpacity(0.08);
+        for (int i = 0; i < 200; i++) {
+          canvas.drawCircle(Offset(Random().nextDouble() * size.width, Random().nextDouble() * size.height), 0.5, paint);
+        }
+        break;
+      case LithologyPattern.shale:
+        paint.color = Colors.black.withOpacity(0.1);
+        for (double i = 0; i < size.height; i += 8) {
+          canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
+        }
+        break;
+      case LithologyPattern.limestone:
+        paint.color = Colors.black.withOpacity(0.1);
+        // Horizontal lines
+        for (double i = 0; i < size.height; i += 20) {
+          canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
+        }
+        // Vertical lines (bricks)
+        for (double i = 0; i < size.height; i += 20) {
+          for (double j = (i % 40 == 0) ? 0 : 30; j < size.width; j += 60) {
+            canvas.drawLine(Offset(j, i), Offset(j, i + 20), paint);
+          }
+        }
+        break;
+      default:
+        // Clay, Tuff, Soil, Generic - just use solid color
+        break;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+
+Step 1.2: Update GeologicalLayerWidget to Use CustomPaintModify GeologicalLayerWidget to remove the DecorationImage and use CustomPaint instead.Plain Text
+
+
+// In GeologicalLayerWidget
+// REMOVE: final String texturePath;
+// ADD:
+final LithologyPattern pattern;
+final Color color;
+
+// In the build method, replace the Container's decoration with CustomPaint
+Container(
+  height: height,
+  width: double.infinity,
+  child: CustomPaint(
+    painter: RockPatternPainter(pattern: pattern, color: color),
+    child: Stack(
+      // ... existing stack children (text, icons)
+    ),
+  ),
+);
+
+
+Step 1.3: Update the Lithology Mapping FunctionReplace your getTextureForLithology function with this new getPatternAndColorForLithology that returns a record.Plain Text
+
+
+(LithologyPattern, Color) getPatternAndColorForLithology(String name, String lithology) {
+  // ... (use the same logic as the previous prompt's mapping matrix)
+  // but instead of returning a string path, return a pattern and color, e.g.:
+  // if (lithLower.contains('sandstone')) {
+  //   return (LithologyPattern.sandstone, const Color(0xFFF5E6C4));
+  // }
+  // if (lithLower.contains('shale')) {
+  //   return (LithologyPattern.shale, const Color(0xFFBCAAA4));
+  // }
+  // ... etc. for all types
+  return (LithologyPattern.generic, Colors.grey); // Default
+}
+
+
+Part 2: Fix Incorrect Layer Scaling
+
+The visual height of each layer must be proportional to its actual thickness.Step 2.1: Implement Proportional Height CalculationIn your _WhatsUnderMyFeetScreenState, create this function. It gives thin layers a minimum height to be visible, and scales thicker layers proportionally.Plain Text
+
+
+double calculateLayerHeight(double thicknessMeters) {
+  const double minHeight = 60.0; // Minimum visible height for thin layers
+  const double pixelsPerMeter = 0.5;
+  
+  // Use a logarithmic-like scale to prevent huge layers from dominating
+  double scaledHeight = minHeight + (log(thicknessMeters + 1) * 50);
+  
+  // Or a simpler linear scale:
+  // double scaledHeight = minHeight + (thicknessMeters * pixelsPerMeter);
+  
+  return scaledHeight;
+}
+
+
+Step 2.2: Update the ListView.builderMake sure you are using this function when building your GeologicalLayerWidget.Plain Text
+
+
+// In ListView.builder
+final layerHeight = calculateLayerHeight(layer.thickness);
+return GeologicalLayerWidget(
+  height: layerHeight,
+  // ... other parameters
+);
+
+
+Step 2.3: Update the DepthScalePainterThe depth scale must reflect the actual cumulative depth, not the visual scroll offset. You need to pre-calculate the cumulative depths and pass them to the painter.Plain Text
+
+
+// In _WhatsUnderMyFeetScreenState
+List<double> _cumulativeDepths = [];
+
+void _calculateDepths() {
+  _cumulativeDepths = [];
+  double currentDepth = 0;
+  for (var layer in _layers) {
+    _cumulativeDepths.add(currentDepth);
+    currentDepth += layer.thickness;
+  }
+}
+
+// In DepthScalePainter, use the actual depth data to draw markers, not a simple loop.
+
+
+Final Verification Checklist
+
+After these changes, verify:
+
+
+Instant Load: The screen must now load almost instantly, with no 10-15 second delay.
+
+
+
+
+Proportional Scale: The 15m "Surface Soil" layer must be visibly MUCH smaller than the 300m "Lagarto Formation".
+
+
+
+
+Correct Patterns: Sandstone layers should have dots, shale layers should have horizontal lines, limestone layers should have bricks, etc.
+
+
+
+
+Accurate Depth Scale: The depth markers on the left (0m, 50m, 100m) must align correctly with the top of each proportionally-scaled layer.
+
+Please implement these critical fixes now.

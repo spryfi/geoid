@@ -1,0 +1,70 @@
+Replit Prompt: Add Development & Testing Features
+
+Objective: To add two developer-only features to accelerate testing and debugging of the core identification workflow: (1) a "Re-Examine" button for saved images, and (2) the ability to import geotagged photos from the device library.
+
+Important: Both features should be wrapped in an if (__DEV__) block so they are only available in the development environment and are completely excluded from the production build.
+
+
+
+
+1. "Re-Examine" Button in My Collection
+
+•
+Goal: To re-run the identification AI on an image that has already been saved to "My Collection". This is essential for testing how changes to the AI prompt or workflow affect results on a known image.
+
+•
+Location: When a user taps on an item in "My Collection" to view its details, add a new button labeled "Re-Examine (Dev Only)".
+
+•
+Visibility: This button must only be visible when __DEV__ is true.
+
+•
+Action:
+
+1.
+When the button is tapped, it should trigger the exact same identification workflow as taking a new photo.
+
+2.
+It should use the saved image and its saved GPS coordinates as the input.
+
+3.
+The app should navigate to the identification results screen, showing the new analysis. The original saved item in the collection should not be overwritten automatically; this simply triggers a new analysis.
+
+
+
+2. Import Geotagged Image from Library
+
+•
+Goal: To allow testing the identification workflow on any geotagged image from the user's photo library, without needing to be physically at the location.
+
+•
+Location: On the main "Identify" screen (the camera view), add a new button, perhaps an icon of a photo gallery.
+
+•
+Visibility: This button must also only be visible when __DEV__ is true.
+
+•
+Action:
+
+1.
+Image Picker: Use the expo-image-picker library to open the device's photo library.
+
+2.
+EXIF Data: After the user selects an image, use a library like expo-media-library or a specific EXIF reader to access the image's metadata and extract the GPS latitude and longitude.
+
+3.
+Handle Missing Geotags: If the selected image does not have GPS data in its EXIF information, show an alert: "This image does not contain GPS data. Please select a geotagged photo."
+
+4.
+Trigger Workflow: If GPS data is found, pass the selected image and its extracted coordinates to the identification workflow, just as if the photo had been taken by the app's camera.
+
+
+
+
+
+
+Quick Copy-Paste for Replit
+
+
+"Please add two developer-only features, wrapped in if (__DEV__) blocks. (1) In the detail view of a saved item in "My Collection", add a "Re-Examine (Dev Only)" button that re-runs the identification AI on the saved image and its GPS data. (2) On the main camera screen, add a gallery icon button that uses expo-image-picker to let me import a photo. Use expo-media-library to read its EXIF GPS data and run the identification workflow on it. Alert the user if the photo has no geotag."
+

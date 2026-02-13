@@ -1,0 +1,89 @@
+{
+  "expo": {
+    "name": "GeoID Pro",
+    "slug": "geoid-pro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/app-icon.png",
+    "scheme": "geoid",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.geoid.pro",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "GeoID Pro needs camera access to photograph and identify rocks and geological formations.",
+        "NSLocationWhenInUseUsageDescription": "GeoID Pro uses your location to show nearby geological features and provide context about the rocks in your area.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "GeoID Pro uses your location to show nearby geological features and provide context about the rocks in your area.",
+        "NSPhotoLibraryUsageDescription": "GeoID Pro needs photo library access to analyze rock photos from your gallery.",
+        "NSPhotoLibraryAddUsageDescription": "GeoID Pro can save identified rock photos to your photo library."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#2C3E50",
+        "foregroundImage": "./assets/images/app-icon.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.geoid.pro",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/app-icon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/geoid_logo_splashPin.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#F5E6D3",
+          "dark": {
+            "backgroundColor": "#2C3E50",
+            "image": "./assets/images/geoid_logo_splashPin.png"
+          }
+        }
+      ],
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "GeoID Pro needs camera access to photograph and identify rocks and geological formations."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "GeoID Pro uses your location to show nearby geological features and provide context about the rocks in your area."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "GeoID Pro needs photo library access to analyze rock photos from your gallery."
+        }
+      ]
+    ],
+    "experiments": {
+      "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "geoid-pro"
+      }
+    }
+  }
+}

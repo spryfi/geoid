@@ -1,0 +1,135 @@
+inal UI Polish: Fit-to-Screen Algorithm for "What's Under My Feet?"
+
+Objective: The current layout for the stratigraphic column is not using screen space effectively. We will implement a "fit-to-screen" algorithm to display ALL geological layers from the surface down to bedrock on a single, non-scrollable page, while maintaining relative thickness proportions.
+
+The User Experience Goal
+
+The user should see the entire geological story at a glance. The current implementation with the "See More" button and large empty space at the bottom fails to achieve this. We must fix this to deliver a world-class user experience.
+
+The Algorithm: Fit-to-Screen Proportional Scaling
+
+Here is the logic to implement in React Native:
+
+Step 1: Get Available Screen Height
+
+•
+On screen load, determine the available vertical space for the geological layers. This will be ScreenHeight - HeaderHeight - FooterHeight - Padding. Let's call this availableHeight.
+
+Step 2: Calculate Total Thickness
+
+•
+Sum the thickness of ALL layers returned by the API (down to the bedrock cap). Let's call this totalThicknessInFeet.
+
+Step 3: Determine Pixels-Per-Foot Ratio
+
+•
+Calculate a ratio to scale the layers. pixelsPerFoot = availableHeight / totalThicknessInFeet.
+
+Step 4: Render Layers with Proportional Heights
+
+•
+For each layer, calculate its height: layerHeight = layer.thicknessInFeet * pixelsPerFoot.
+
+Step 5: Enforce Minimum Height for Readability
+
+•
+This is the most important step to prevent thin layers from becoming invisible.
+
+•
+After calculating layerHeight, check if it's below a minimum threshold.
+
+•
+If layerHeight < 60 (pixels), set layerHeight = 60. This ensures there is always enough space for the text (Formation Name, Epoch, Thickness).
+
+Step 6: Re-normalize if Minimums are Applied
+
+•
+If you had to enforce the minimum height on some layers, the total height might now exceed availableHeight. You must re-normalize:
+
+1.
+Sum the heights of all the "minimum height" layers.
+
+2.
+Subtract this sum from availableHeight to get the remaining space.
+
+3.
+Recalculate the pixelsPerFoot ratio for the remaining (thicker) layers using the remaining space.
+
+4.
+Render the thicker layers using this new, adjusted ratio.
+
+
+
+Step 7: Remove the "See More" Button
+
+•
+The "See More" button should be completely removed from the default view. The goal is to show everything at once.
+
+•
+Only re-introduce it if you detect that the total number of layers is exceptionally high (e.g., > 20), which would make the minimum height rule impossible to follow. For most locations (like Buda with ~10-15 layers), this will not be an issue.
+
+Example Implementation Logic
+
+JavaScript
+
+
+// --- In your 'WhatsUnderMyFeetScreen' component ---
+
+// 1. Get available height (e.g., using onLayout)
+const [availableHeight, setAvailableHeight] = useState(0);
+
+// 2. Get total thickness of all layers
+const totalThickness = layers.reduce((sum, layer) => sum + layer.thickness, 0);
+
+// 3. Calculate heights
+const layerHeights = calculateLayerHeights(layers, totalThickness, availableHeight);
+
+// 4. Render the list
+return (
+  <View onLayout={(event) => setAvailableHeight(event.nativeEvent.layout.height)}>
+    {layers.map((layer, index) => (
+      <GeologicalLayer
+        key={layer.id}
+        layer={layer}
+        height={layerHeights[index]}
+      />
+    ))}
+  </View>
+);
+
+// --- Helper function ---
+function calculateLayerHeights(layers, totalThickness, availableHeight) {
+  const MIN_HEIGHT = 60; // pixels
+  let pixelsPerFoot = availableHeight / totalThickness;
+  
+  // Initial calculation
+  let heights = layers.map(layer => layer.thickness * pixelsPerFoot);
+
+  // Check for minimums and adjust
+  const smallLayers = heights.filter(h => h < MIN_HEIGHT);
+  if (smallLayers.length > 0) {
+    let remainingHeight = availableHeight - (smallLayers.length * MIN_HEIGHT);
+    let remainingThickness = 0;
+    layers.forEach((layer, i) => {
+      if (heights[i] >= MIN_HEIGHT) {
+        remainingThickness += layer.thickness;
+      }
+    });
+
+    const adjustedPixelsPerFoot = remainingHeight / remainingThickness;
+
+    heights = layers.map((layer, i) => {
+      if (heights[i] < MIN_HEIGHT) {
+        return MIN_HEIGHT;
+      } else {
+        return layer.thickness * adjustedPixelsPerFoot;
+      }
+    });
+  }
+
+  return heights;
+}
+
+
+This algorithm will create a beautiful, informative, and user-friendly visualization that fits perfectly on the screen, just as intended.
+

@@ -1,0 +1,117 @@
+Replit Prompt: World-Class "What's Under My Feet?" - Adaptive Scale, Real Aquifers & Educational Facts
+
+Objective: You must transform the WhatsUnderMyFeetScreen from a simple list into a world-class, educational, and visually stunning experience. This requires implementing three major upgrades: a smart adaptive scaling algorithm, an accurate aquifer detection system, and the inclusion of fascinating educational facts for each layer.
+
+
+PROMPT START
+
+I need you to perform a final, major refactor of the WhatsUnderMyFeetScreen component. The previous scaling was not educational enough. We need a "quasi-reality" that is both visually impressive and scientifically informative. This is a React Native project.Part 1: The Smart Adaptive Scaling Algorithm
+
+A pure 1:1 scale is not practical. We will use a Square Root Scaling Algorithm. This ensures thin layers are readable while thick layers are still proportionally massive, without requiring excessive scrolling.Step 1.1: Implement the calculateAdaptiveHeight functionJavaScript
+
+
+const METER_TO_FEET = 3.28084;
+
+function calculateAdaptiveHeight(thicknessMeters) {
+  const thicknessFeet = thicknessMeters * METER_TO_FEET;
+  
+  const minHeight = 70; // Minimum height in pixels for readability
+  const scaleFactor = 4.5; // Adjust this to control how fast thick layers grow
+  
+  // The square root makes the growth non-linear!
+  const height = minHeight + Math.sqrt(thicknessFeet) * scaleFactor;
+  
+  return height;
+}
+
+
+Why this works:•
+A 50ft layer gets a height of 70 + sqrt(50) * 4.5 = ~102px (readable).
+
+•
+A 1000ft layer gets a height of 70 + sqrt(1000) * 4.5 = ~212px (clearly much thicker).
+
+•
+A 4000ft layer gets a height of 70 + sqrt(4000) * 4.5 = ~354px (massive, but not 40x bigger).
+
+This algorithm achieves the "quasi-reality" you want.Part 2: Accurate Aquifer Detection
+
+Do not put a water drop icon on every porous layer. Only mark known, major aquifer systems.Step 2.1: Create the isKnownAquifer helper functionCreate a new file lib/geology_helpers.js and add this function. This is a targeted list, not a generic check.JavaScript
+
+
+const MAJOR_AQUIFERS = [
+  'ogallala', 'edwards', 'floridan', 'carrizo-wilcox', 'mahomet',
+  'dakota', 'kirkwood-cohansey', 'san joaquin', 'columbia plateau',
+  'snake river plain', 'high plains'
+];
+
+export function isKnownAquifer(formationName) {
+  if (!formationName) return false;
+  const lowerCaseName = formationName.toLowerCase();
+  return MAJOR_AQUIFERS.some(aq => lowerCaseName.includes(aq));
+}
+
+
+Step 2.2: Use the function in your componentJavaScript
+
+
+import { isKnownAquifer } from './lib/geology_helpers';
+
+// Inside your GeologicalLayer component
+const showWaterIcon = isKnownAquifer(layer.formation_name);
+
+{showWaterIcon && <Image source={require('./assets/icons/icon_water_drop.png')} ... />}
+
+
+Part 3: Add "Fascinating Fact" Educational Content
+
+Each layer should have a small, engaging fact about it. This makes the feature truly educational.Step 3.1: Create the getFormationFact functionIn lib/geology_helpers.js, add this function. For now, it will be a placeholder. You will later wire this up to an AI call or a database.JavaScript
+
+
+export function getFormationFact(formationName) {
+  // TODO: Implement AI call to get a real fact.
+  // Prompt for AI: "Generate a one-sentence fascinating fact for a layperson about the [formationName] geological formation, focusing on its environment of deposition or the types of fossils found within it."
+  
+  // Placeholder logic for now:
+  if (formationName.toLowerCase().includes('tuff')) {
+    return "Formed from volcanic ash that settled over millions of years.";
+  } else if (formationName.toLowerCase().includes('limestone')) {
+    return "Typically forms in warm, shallow marine waters from the accumulation of shell, coral, and algal debris.";
+  } else {
+    return "A unique geological layer with a rich history waiting to be discovered.";
+  }
+}
+
+
+Step 3.2: Add the Fact to the GeologicalLayer ComponentAdd a new <Text> element to display the fact. It should be smaller and styled differently from the main text.JSX
+
+
+// Inside the GeologicalLayer component's text container
+<Text style={styles.layerName}>{layer.formation_name}</Text>
+<Text style={styles.layerEpoch}>{layer.epoch}</Text>
+<Text style={styles.fascinatingFact}>{getFormationFact(layer.formation_name)}</Text>
+
+
+Final Verification Checklist
+
+
+
+
+Adaptive Scale: The 15m layer is small but readable. The 300m layer is significantly larger. The visual proportions feel educational and correct.
+
+
+
+
+Accurate Aquifers: Water drops ONLY appear on formations like the "Carrizo-Wilcox" or others in the MAJOR_AQUIFERS list.
+
+
+
+
+Fascinating Facts: Each layer now displays a short, interesting fact below its name.
+
+
+
+
+UI Polish: The screen still retains the irregular rock edge, warm background, and other visual elements from the mockup.
+
+Please implement this world-class refactor now.

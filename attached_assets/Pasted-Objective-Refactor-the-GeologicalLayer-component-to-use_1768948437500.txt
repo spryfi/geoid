@@ -1,0 +1,151 @@
+Objective: Refactor the GeologicalLayer component to use visually distinct, hardness-based patterns for each rock type instead of the current repetitive solid colors and dot patterns. This is critical for making the visualization scientifically accurate and educational.
+
+1. The Problem
+
+The current implementation uses the same pattern for different rock types:
+
+•
+Lagarto Formation (Clay/Shale): Solid brown
+
+•
+Caliche/Topsoil (Unconsolidated): Solid brown (same!)
+
+•
+Oakville Formation (Sandstone): Tan with dots
+
+•
+Catahoula Tuff (Volcanic Ash): Tan with dots (same!)
+
+This is incorrect and uninformative. We need to map lithology to a representative pattern.
+
+2. The Solution: Hardness-Based SVG Patterns
+
+Create a new helper function getPatternForLithology(lithology) that returns a specific SVG pattern component based on the rock type. This function should implement the following logic:
+
+JavaScript
+
+
+// In a new file, e.g., 'patterns.js'
+import React from 'react';
+import { Svg, Rect, Path, Circle } from 'react-native-svg';
+
+// --- PATTERN DEFINITIONS ---
+
+const SandstonePattern = () => (
+  <Svg height="100%" width="100%">
+    <Rect width="100%" height="100%" fill="#D2B48C" />
+    {/* Add scattered dots for sand grains */}
+    <Circle cx="10%" cy="20%" r="1.5" fill="#A0522D" />
+    <Circle cx="50%" cy="50%" r="1" fill="#8B4513" />
+    <Circle cx="80%" cy="75%" r="1.2" fill="#A0522D" />
+     {/* ... add more random dots */}
+  </Svg>
+);
+
+const LimestonePattern = () => (
+  <Svg height="100%" width="100%">
+    <Rect width="100%" height="100%" fill="#BDBDBD" />
+    {/* Add blocky brick-like pattern */}
+    <Path d="M0 10 H100 M0 30 H100 M20 10 V30 M70 10 V30" stroke="#757575" strokeWidth="1" />
+  </Svg>
+);
+
+const ShalePattern = () => (
+  <Svg height="100%" width="100%">
+    <Rect width="100%" height="100%" fill="#A1887F" />
+    {/* Add horizontal lines for layers */}
+    <Path d="M0 5 H100 M0 15 H100 M0 25 H100" stroke="#5D4037" strokeWidth="0.8" />
+  </Svg>
+);
+
+const ClayPattern = () => (
+  <Svg height="100%" width="100%">
+    <Rect width="100%" height="100%" fill="#8D8741" />
+  </Svg>
+);
+
+const TuffPattern = () => (
+    <Svg height="100%" width="100%">
+        <Rect width="100%" height="100%" fill="#EADDCA" />
+        {/* Add angular speckles for volcanic ash */}
+        <Path d="M10 10 L12 8 L11 12 Z" fill="#7D7D7D" />
+        <Path d="M40 30 L43 28 L41 33 Z" fill="#6B6B6B" />
+        <Path d="M70 60 L72 58 L71 62 Z" fill="#8A8A8A" />
+    </Svg>
+);
+
+// --- MAPPING FUNCTION ---
+
+export const getPatternForLithology = (lithology) => {
+  const lowerLith = lithology.toLowerCase();
+
+  if (lowerLith.includes('limestone') || lowerLith.includes('dolomite') || lowerLith.includes('chalk')) {
+    return <LimestonePattern />;
+  }
+  if (lowerLith.includes('sandstone') || lowerLith.includes('sand')) {
+    return <SandstonePattern />;
+  }
+  if (lowerLith.includes('shale') || lowerLith.includes('siltstone')) {
+    return <ShalePattern />;
+  }
+  if (lowerLith.includes('clay') || lowerLith.includes('marl') || lowerLith.includes('lagarto')) {
+    return <ClayPattern />;
+  }
+  if (lowerLith.includes('tuff')) {
+    return <TuffPattern />;
+  }
+  // Default for Caliche/Topsoil/etc.
+  return <ClayPattern />;
+};
+
+
+3. Update the GeologicalLayer Component
+
+Modify your main layer component to call this new function. Instead of a View with a solid background color, use the returned SVG component.
+
+Before:
+
+JavaScript
+
+
+<View style={{ backgroundColor: '#A1887F', height: layerHeight }}>
+  {/* ... text content ... */}
+</View>
+
+
+After:
+
+JavaScript
+
+
+import { getPatternForLithology } from './patterns';
+
+// ... inside your component
+const pattern = getPatternForLithology(layer.lithology || layer.name);
+
+return (
+  <View style={{ height: layerHeight }}>
+    {pattern}
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+      {/* ... text content ... */}
+    </View>
+  </View>
+);
+
+
+4. Expected Outcome
+
+•
+Lagarto Formation (Clay): Will now use the solid gray-green ClayPattern.
+
+•
+Oakville Formation (Sandstone): Will use the tan SandstonePattern with dots.
+
+•
+Catahoula Tuff: Will use the light, speckled TuffPattern.
+
+•
+Limestone layers: Will use the gray, blocky LimestonePattern.
+
+This will create a much more accurate, educational, and visually appealing experience for the user, directly reflecting the geology.
+

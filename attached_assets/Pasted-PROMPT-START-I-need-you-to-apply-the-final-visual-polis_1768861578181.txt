@@ -1,0 +1,164 @@
+PROMPT START
+
+I need you to apply the final visual polish to the WhatsUnderMyFeetScreen. The functionality is correct, but we need to match the aesthetics of our design mockup. Please implement the following changes precisely.1. Change Background ColorChange the Scaffold's backgroundColor to a warm, earthy tan color. The mockup uses a color like Color(0xFFEFEBE9).Plain Text
+
+
+// In WhatsUnderMyFeetScreen build method
+Scaffold(
+  backgroundColor: const Color(0xFFEFEBE9), // Light tan background
+  // ... rest of scaffold
+);
+
+
+2. Add Irregular Right Edge to LayersThe right side of each geological layer should not be a straight rectangle. It needs a natural, wavy rock edge. You must wrap the GeologicalLayerWidget's Container with a ClipPath that uses this custom clipper.Create lib/widgets/irregular_edge_clipper.dart:Plain Text
+
+
+import 'package:flutter/material.dart';
+import 'dart:math' as math;
+
+class IrregularEdgeClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height);
+    path.lineTo(size.width - 20, size.height);
+
+    // Create a wavy, natural edge
+    for (double i = size.height; i > 0; i -= 10) {
+      final y = i;
+      final x = size.width - 20 + (math.sin(y / 20) * 10);
+      path.lineTo(x, y);
+    }
+
+    path.lineTo(size.width - 20, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+
+Update GeologicalLayerWidget:Plain Text
+
+
+// In GeologicalLayerWidget build method
+return ClipPath(
+  clipper: IrregularEdgeClipper(),
+  child: Container(
+    // ... existing container code
+  ),
+);
+
+
+3. Add Text Shadows for ReadabilityThe layer name and epoch text can be hard to read on some textures. Add a subtle black shadow to the text style.Update GeologicalLayerWidget TextStyles:Plain Text
+
+
+Text(
+  name,
+  style: const TextStyle(
+    color: Colors.white,
+    fontSize: 18,
+    fontWeight: FontWeight.bold,
+    shadows: [
+      Shadow(blurRadius: 2.0, color: Colors.black54, offset: Offset(1, 1)),
+    ],
+  ),
+),
+Text(
+  epoch,
+  style: TextStyle(
+    color: Colors.white.withOpacity(0.9),
+    fontSize: 14,
+    shadows: [
+      Shadow(blurRadius: 2.0, color: Colors.black54, offset: Offset(1, 1)),
+    ],
+  ),
+),
+
+
+4. Add Subtle Borders Between LayersTo give the layers a sense of depth and separation, add a thin border to the top of each layer's container.Update GeologicalLayerWidget Container Decoration:Plain Text
+
+
+Container(
+  decoration: BoxDecoration(
+    border: Border(top: BorderSide(color: Colors.black.withOpacity(0.2), width: 1.5)),
+    image: DecorationImage(
+      // ... existing image decoration
+    ),
+  ),
+  // ... rest of container
+);
+
+
+5. Implement K-T Boundary and Fossil MarkersWe need to show special markers for significant geological events. Add this logic inside the GeologicalLayerWidget's Stack.Add these parameters to GeologicalLayerWidget:Plain Text
+
+
+final bool hasKtBoundary;
+final bool hasFossils;
+
+
+Update the Stack in GeologicalLayerWidget:Plain Text
+
+
+Stack(
+  children: [
+    // ... existing text and aquifer icons
+
+    // K-T Boundary Marker
+    if (hasKtBoundary)
+      Positioned.fill(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                Expanded(child: DashedLine(color: Colors.red.withOpacity(0.7))),
+                Image.asset('assets/icons/icon_dino_skull.png', width: 32, height: 32),
+                Expanded(child: DashedLine(color: Colors.red.withOpacity(0.7))),
+              ],
+            ),
+            const Text('K-T Boundary', style: TextStyle(color: Colors.white, fontSize: 10, shadows: [Shadow(blurRadius: 2, color: Colors.black)])),
+          ],
+        ),
+      ),
+
+    // Fossil Icon
+    if (hasFossils)
+      Positioned(
+        right: 80, // next to aquifer icon
+        bottom: 12,
+        child: Image.asset('assets/icons/icon_fossil.png', width: 32, height: 32),
+      ),
+  ],
+);
+
+
+You will also need a DashedLine painter widget and update the main screen to pass the hasKtBoundary and hasFossils booleans based on the layer data.6. Final VerificationAfter these changes, the screen must look exactly like the mockup:
+
+
+Warm tan background.
+
+
+
+
+Layers have a natural, wavy right edge.
+
+
+
+
+Text is crisp and readable with shadows.
+
+
+
+
+Layers are separated by subtle borders.
+
+
+
+
+Special markers for K-T Boundary and fossils appear where appropriate.
+
+Please implement these final visual enhancements now.PROMPT END
+

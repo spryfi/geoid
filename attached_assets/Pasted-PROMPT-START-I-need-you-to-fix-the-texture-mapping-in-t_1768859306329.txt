@@ -1,0 +1,133 @@
+PROMPT START
+
+I need you to fix the texture mapping in the WhatsUnderMyFeetScreen. The current implementation is incorrect. You must replace the getTextureForLithology function with the new, more detailed version below. This new function acts as a matrix, mapping specific geological terms to the correct visual texture.
+
+Step 1: Replace the getTextureForLithology Function
+
+In your _WhatsUnderMyFeetScreenState or wherever the helper functions are located, completely delete the old getTextureForLithology function and replace it with this exact code:
+
+Plain Text
+
+
+String getTextureForLithology(String name, String lithology) {
+  final nameLower = name.toLowerCase();
+  final lithLower = lithology.toLowerCase();
+
+  // --- Priority 1: Check for specific formation names first ---
+  if (nameLower.contains('tuff')) {
+    return 'assets/textures/tuff_texture.png';
+  }
+  if (nameLower.contains('lagarto') || nameLower.contains('yegua') || nameLower.contains('reklaw')) {
+    return 'assets/textures/clay_texture.png'; // These are often clay/marl
+  }
+
+  // --- Priority 2: Check for specific lithology keywords ---
+  
+  // Soil / Surface
+  if (lithLower == 'unnamed' || lithLower.contains('soil') || lithLower.contains('alluvium')) {
+    return 'assets/textures/soil_texture.png';
+  }
+
+  // Tuff / Volcanic Ash
+  if (lithLower.contains('tuff') || lithLower.contains('ash')) {
+    return 'assets/textures/tuff_texture.png';
+  }
+
+  // Clay / Marl / Mudstone
+  if (lithLower.contains('clay') || lithLower.contains('marl') || lithLower.contains('mudstone')) {
+    return 'assets/textures/clay_texture.png';
+  }
+
+  // Shale / Siltstone
+  if (lithLower.contains('shale') || lithLower.contains('siltstone')) {
+    return 'assets/textures/shale_texture.png';
+  }
+
+  // Sandstone / Sand
+  if (lithLower.contains('sandstone') || lithLower.contains('sand')) {
+    return 'assets/textures/sandstone_texture.png';
+  }
+
+  // Limestone / Chalk
+  if (lithLower.contains('limestone') || lithLower.contains('chalk')) {
+    return 'assets/textures/limestone_texture.png';
+  }
+
+  // Dolomite
+  if (lithLower.contains('dolomite') || lithLower.contains('dolostone')) {
+    return 'assets/textures/dolomite_texture.png';
+  }
+
+  // Igneous (Granite, Basalt)
+  if (lithLower.contains('granite') || lithLower.contains('gneiss')) {
+    return 'assets/textures/granite_texture.png';
+  }
+  if (lithLower.contains('basalt') || lithLower.contains('lava')) {
+    return 'assets/textures/basalt_texture.png';
+  }
+
+  // --- Priority 3: Fallback for general terms ---
+  if (lithLower.contains('formation')) {
+    return 'assets/textures/sandstone_texture.png'; // A safe default
+  }
+
+  // --- Final Default Fallback ---
+  return 'assets/textures/clay_texture.png'; // Default for anything else
+}
+
+
+Step 2: Update the Widget Call
+
+Now, find where you call the GeologicalLayerWidget inside your ListView.builder. You must update the texturePath parameter to pass both the layer's name and lithology to our new function.
+
+Change this:
+
+Plain Text
+
+
+final texture = getTextureForLithology(layer.lithology);
+
+
+To this:
+
+Plain Text
+
+
+final texture = getTextureForLithology(layer.name, layer.lithology);
+
+
+Step 3: Performance Optimization Note
+
+The long loading time is likely due to the large, high-resolution texture images. After implementing the mapping, if the screen is still slow to load or scroll, you must resize all texture images in the assets/textures/ folder to be smaller, such as 256x256 pixels, and re-upload them. This will significantly improve performance.
+
+Step 4: Verification Checklist
+
+After you have made these changes, please verify the following:
+
+
+
+
+The Catahoula Tuff layer now uses the light gray, porous tuff_texture.png.
+
+
+
+
+The Lagarto Formation layer now uses the gray-green clay_texture.png.
+
+
+
+
+The Oakville Formation (likely sandstone) uses the tan, wavy sandstone_texture.png.
+
+
+
+
+The Frio Formation (often sandstone) uses the sandstone_texture.png.
+
+
+
+
+The screen loads and scrolls smoothly.
+
+This is a critical fix to ensure the visualization is scientifically accurate and visually diverse. Please implement this change now.
+

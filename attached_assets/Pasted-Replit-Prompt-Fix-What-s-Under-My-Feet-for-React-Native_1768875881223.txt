@@ -1,0 +1,139 @@
+Replit Prompt: Fix "What's Under My Feet?" for React Native - True Scale, Feet, and UI Polish
+
+Objective: The "What's Under My Feet?" screen has critical issues with scale and UI. You must refactor this React Native screen to achieve a true 1:1 proportional scale, convert all units to feet, and precisely match the visual polish of our design mockup. This includes implementing a "See More" button for deep geological columns.
+
+
+PROMPT START
+
+I need you to perform a major refactor of the WhatsUnderMyFeetScreen component. Your previous implementation had incorrect scaling. You must now implement a true 1:1 proportional scale and match the UI mockup exactly. This is a React Native project, so all code must be in JavaScript/TypeScript and use React Native components.Part 1: True 1:1 Proportional Scaling & Unit Conversion
+
+The core of this task is to make the visualization scientifically accurate. A 50ft layer must look tiny compared to a 1000ft layer.Step 1.1: Convert Meters to FeetFirst, convert all incoming thickness and depth data from meters to feet. Use the conversion factor: 1 meter = 3.28084 feet.JavaScript
+
+
+const METER_TO_FEET = 3.28084;
+const thicknessInFeet = layer.thickness_meters * METER_TO_FEET;
+
+
+Step 1.2: Implement 1:1 Pixel-per-Foot ScalingDefine a constant for the scale. This will determine the height of each layer.JavaScript
+
+
+const PIXELS_PER_FOOT = 0.5; // 1 foot of rock = 0.5 pixels high
+const layerHeight = thicknessInFeet * PIXELS_PER_FOOT;
+
+
+The layerHeight will now be directly proportional to the real-world thickness.Part 2: UI Polish to Match the Mockup
+
+Step 2.1: Create the Irregular Rock EdgeUse react-native-svg to create the natural, wavy right edge. The layer component should be wrapped in an <Svg> container with a <ClipPath>.GeologicalLayer.js component structure:JSX
+
+
+import Svg, { ClipPath, Path, Image as SvgImage } from 'react-native-svg';
+
+const GeologicalLayer = ({ height, patternUri, ... }) => {
+  const irregularPath = "M0,0 L280,0 L270,${height} L0,${height} Z"; // Simplified example
+
+  return (
+    <Svg height={height} width="100%">
+      <ClipPath id="clip">
+        <Path d={irregularPath} />
+      </ClipPath>
+      <SvgImage
+        href={patternUri} // Use the correct texture pattern
+        width="100%"
+        height={height}
+        preserveAspectRatio="xMidYMid slice"
+        clipPath="url(#clip)"
+      />
+      {/* Overlay text and icons here using <foreignObject> or absolute positioning */}
+    </Svg>
+  );
+};
+
+
+Step 2.2: Add Special Markers (K-T Boundary, etc.)Inside the layer component, check for specific conditions and overlay the correct icons.JavaScript
+
+
+// Inside the GeologicalLayer component
+const hasKtBoundary = layer.age_ma > 65 && layer.age_ma < 67;
+const isAquifer = layer.lithology.includes('sandstone'); // Simplified
+
+return (
+  <View style={{ height: layerHeight }}>
+    {/* ... SVG for texture ... */}
+    {isAquifer && <Image source={require('./assets/icons/icon_water_drop.png')} style={styles.aquiferIcon} />}
+    {hasKtBoundary && <Image source={require('./assets/icons/icon_dino_skull.png')} style={styles.ktIcon} />}
+  </View>
+);
+
+
+Part 3: "See More" Functionality for Deep Columns
+
+The screen should not be infinitely long on initial load. It should show a preview and allow the user to expand.Step 3.1: Use State to Control ExpansionJavaScript
+
+
+const [isExpanded, setIsExpanded] = useState(false);
+const [totalHeight, setTotalHeight] = useState(0);
+const screenHeight = Dimensions.get('window').height;
+const initialHeight = screenHeight * 0.6; // Show 60% of the screen initially
+
+
+Step 3.2: Structure the Main ViewJSX
+
+
+<View style={{ flex: 1 }}>
+  <ScrollView style={{ height: isExpanded ? totalHeight : initialHeight }}>
+    <View onLayout={(event) => setTotalHeight(event.nativeEvent.layout.height)}>
+      {layers.map(layer => <GeologicalLayer key={layer.id} ... />)}
+    </View>
+  </ScrollView>
+
+  {!isExpanded && totalHeight > initialHeight && (
+    <TouchableOpacity onPress={() => setIsExpanded(true)} style={styles.seeMoreButton}>
+      <Text style={styles.seeMoreText}>See More</Text>
+    </TouchableOpacity>
+  )}
+</View>
+
+
+This logic does the following:1.
+Renders all layers inside a ScrollView.
+
+2.
+The ScrollView is constrained to a fixed initialHeight.
+
+3.
+onLayout measures the full height of all the rendered layers.
+
+4.
+If the full totalHeight is greater than the visible initialHeight, a "See More" button appears.
+
+5.
+Tapping the button sets isExpanded to true, removing the height constraint and revealing the entire column.
+
+Final Verification Checklist
+
+After these changes, verify:
+
+
+True Scale: The 15m (49ft) layer is visually tiny compared to the 300m (984ft) layer.
+
+
+
+
+Units are Feet: All depth and thickness numbers displayed are in feet.
+
+
+
+
+UI Matches Mockup: The screen has the warm tan background, irregular rock edges, and correct patterns.
+
+
+
+
+"See More" Works: For deep columns, a "See More" button appears, and tapping it expands the view.
+
+
+
+
+No "See More" for Shallow Columns: If all layers fit in the initial view, the button does not appear.
+
+Please implement this full refactor for React Native now.

@@ -1,0 +1,123 @@
+Replit Prompt: Two Specific Fixes for Stratigraphy Modal
+
+These are two small but important fixes. Please implement both.
+
+
+
+
+Fix 1: Make "Fossil Sites" Row Tappable
+
+Current Problem: The "Fossil Sites: 1 collections" row is static text. Users cannot tap it.
+
+Required Fix:
+
+1.
+Wrap the Fossil Sites row in a TouchableOpacity so it responds to taps.
+
+2.
+Add a visual indicator that it's tappable (e.g., a small chevron > icon on the right side, or style the text as a link color like blue).
+
+3.
+On tap, open a new modal or bottom sheet that shows details about the fossil collections. For now, this can be a placeholder that says: "Fossil details coming soon. [X fossil types] have been found in this formation."
+
+4.
+Fix the grammar: Use proper singular/plural. If there is 1 collection, display "1 collection". If there are 2 or more, display "X collections".
+
+Code Example:
+
+JSX
+
+
+// In your modal component
+const fossilCount = layer.fossilCollections || 0;
+const fossilLabel = fossilCount === 1 ? 'collection' : 'collections';
+
+// ...
+
+<TouchableOpacity 
+  onPress={() => setShowFossilDetails(true)}
+  style={{ flexDirection: 'row', alignItems: 'center' }}
+>
+  <Text style={styles.rowLabel}>Fossil Sites:</Text>
+  <Text style={[styles.rowValue, { color: '#007AFF' }]}>
+    {fossilCount} {fossilLabel}
+  </Text>
+  <MaterialCommunityIcons name="chevron-right" size={16} color="#007AFF" />
+</TouchableOpacity>
+
+
+
+
+
+
+Fix 2: Add "Show More" Button at Bottom of Modal
+
+Current Problem: There is no way for users to see additional information about the formation.
+
+Required Fix:
+
+1.
+Add a "Show More" button at the very bottom of the modal, below the "Fascinating Fact" section.
+
+2.
+Style it as a text button (e.g., "Show More..." in orange or blue, centered).
+
+3.
+On tap, expand the modal to show additional content:
+
+•
+A longer paragraph about how the formation was created.
+
+•
+Any additional facts or context.
+
+•
+For now, this can be AI-generated or placeholder text.
+
+
+
+4.
+Toggle the button text to "Show Less" when expanded.
+
+Code Example:
+
+JSX
+
+
+const [isExpanded, setIsExpanded] = useState(false);
+
+// ...
+
+{/* Fascinating Fact section */}
+<Text style={styles.factTitle}>Fascinating Fact</Text>
+<Text style={styles.factText}>{layer.fascinatingFact}</Text>
+
+{/* Show More / Show Less button */}
+<TouchableOpacity 
+  onPress={() => setIsExpanded(!isExpanded)}
+  style={{ paddingVertical: 12, alignItems: 'center' }}
+>
+  <Text style={{ color: '#E07B39', fontWeight: '600' }}>
+    {isExpanded ? 'Show Less' : 'Show More...'}
+  </Text>
+</TouchableOpacity>
+
+{/* Expanded content */}
+{isExpanded && (
+  <View style={{ paddingTop: 8 }}>
+    <Text style={styles.expandedText}>
+      {layer.detailedDescription || 'More detailed information about this formation will be available soon.'}
+    </Text>
+  </View>
+)}
+
+
+
+
+
+
+Quick Copy-Paste for Replit
+
+
+"Please fix two issues in the stratigraphy info modal: (1) Make the 'Fossil Sites' row tappable using TouchableOpacity. Add a chevron icon to indicate it's tappable. When tapped, open a placeholder modal that says 'Fossil details coming soon.' Also fix the grammar: if there is 1 collection, say '1 collection' (singular), not '1 collections'. (2) Add a 'Show More...' button at the bottom of the modal, below the Fascinating Fact. When tapped, it should expand to show additional content and the button text should change to 'Show Less'."
+

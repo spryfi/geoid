@@ -1,0 +1,193 @@
+Replit Prompt: Implement the "Explore Nearby" Map Feature
+
+Objective: Build the "Explore Nearby" screen, a map-based interface that displays interesting geological features and landmarks around the user. For the initial implementation in the Buda, TX area (30.0658, -97.7745), the primary feature to highlight is the Balcones Escarpment.
+
+1. Core Components & Structure
+
+This screen requires the react-native-maps library. If not installed, run npm install react-native-maps.
+
+The basic structure of the screen should be:
+
+JavaScript
+
+
+import MapView, { Marker, Polyline, Callout } from 'react-native-maps';
+
+const ExploreNearbyScreen = () => {
+  // State for map region, markers, selected feature, etc.
+  const [region, setRegion] = useState({ /* Initial region for Buda, TX */ });
+  const [pointsOfInterest, setPointsOfInterest] = useState([]);
+  const [balconesTrace, setBalconesTrace] = useState([]);
+
+  useEffect(() => {
+    // Fetch POIs and Balcones Escarpment data
+  }, []);
+
+  return (
+    <View style={{ flex: 1 }}>
+      <MapView style={{ flex: 1 }} initialRegion={region}>
+        {/* Polyline for Balcones Escarpment */}
+        <Polyline coordinates={balconesTrace} strokeColor="#FFA500" strokeWidth={4} />
+
+        {/* Markers for POIs */}
+        {pointsOfInterest.map(poi => (
+          <Marker key={poi.id} coordinate={poi.coords}>
+            {/* Custom marker icon based on poi.type */}
+          </Marker>
+        ))}
+      </MapView>
+      
+      {/* Search Bar, Filter Button, and Selected Feature Card UI overlays */}
+    </View>
+  );
+};
+
+
+2. The Star Feature: Balcones Escarpment
+
+This is the most important geological feature in Central Texas. We will represent it as a prominent line on the map.
+
+Action:
+
+1.
+Get the Data: Create a mock data file balcones.js that contains a series of latitude/longitude coordinates tracing the escarpment through the Austin/Buda area. A real implementation would fetch this from a GIS database, but for now, a mock array is perfect.
+
+JavaScript
+
+
+// data/balcones.js
+export const balconesEscarpmentTrace = [
+  { latitude: 30.28, longitude: -97.76 },
+  { latitude: 30.25, longitude: -97.77 },
+  { latitude: 30.15, longitude: -97.79 },
+  { latitude: 30.05, longitude: -97.80 }, // Near Buda
+  { latitude: 29.95, longitude: -97.82 },
+  // ...add more points for a smoother line
+];
+
+
+
+
+2.
+Render the Polyline: Use the <Polyline> component from react-native-maps to draw the trace on the map. Make it stand out with a bright color (e.g., orange) and a thicker stroke.
+
+3. Points of Interest (POIs)
+
+These are the tappable icons on the map.
+
+Action:
+
+1.
+Define POI Categories: Create an enum or object for the different types of POIs we want to show.
+
+JavaScript
+
+
+export const POI_TYPES = {
+  FOSSIL_SITE: 'Fossil Site',
+  MINERAL_DEPOSIT: 'Mineral Deposit',
+  GEOLOGICAL_LANDMARK: 'Geological Landmark',
+  ROCK_OUTCROP: 'Rock Outcrop',
+};
+
+
+
+
+2.
+Create Mock POI Data: For now, create a mock array of POIs around Buda. This data should include coordinates, type, name, and a description.
+
+JavaScript
+
+
+// data/pois.js
+export const nearbyPois = [
+  {
+    id: 1, name: 'Austin Chalk Outcrop',
+    type: POI_TYPES.ROCK_OUTCROP,
+    coords: { latitude: 30.10, longitude: -97.81 },
+    description: 'A road cut revealing the Austin Chalk, a Cretaceous-age limestone famous for its fossils.'
+  },
+  {
+    id: 2, name: 'Onion Creek Fossil Bed',
+    type: POI_TYPES.FOSSIL_SITE,
+    coords: { latitude: 30.12, longitude: -97.75 },
+    description: 'Known for Exogyra ponderosa fossils, a type of large oyster from the late Cretaceous period.'
+  },
+];
+
+
+
+
+3.
+Custom Markers: Create a <CustomMarker> component that takes a type prop and returns a different icon for each category (use SVGs or simple styled Views).
+
+JavaScript
+
+
+// Example for a single marker type
+const FossilMarker = () => <View style={{...}}><Icon name="bug" ... /></View>;
+
+
+
+
+4. Interactivity: Tappable Cards
+
+When a user taps a marker, a card should slide up from the bottom with details about that POI.
+
+Action:
+
+1.
+State for Selection: Add state to track the currently selected POI.
+
+JavaScript
+
+
+const [selectedPoi, setSelectedPoi] = useState(null);
+
+
+
+
+2.
+Update Marker onPress: When a marker is tapped, update this state.
+
+JavaScript
+
+
+<Marker key={poi.id} coordinate={poi.coords} onPress={() => setSelectedPoi(poi)} />
+
+
+
+
+3.
+Render the Card: Conditionally render a card component at the bottom of the screen if selectedPoi is not null. Use a library like react-native-modal or a simple animated View.
+
+JavaScript
+
+
+{selectedPoi && (
+  <View style={styles.cardContainer}>
+    <Image source={{ uri: selectedPoi.imageUrl }} style={styles.cardImage} />
+    <Text style={styles.cardTitle}>{selectedPoi.name}</Text>
+    <Text style={styles.cardSubtitle}>{selectedPoi.type} - 3.2 mi away</Text>
+    <Button title="Get Directions" />
+  </View>
+)}
+
+
+
+
+5. UI Elements (Search & Filter)
+
+Action:
+
+1.
+Search Bar: Add a search bar component fixed at the top of the screen. For now, it doesn't need to be functional.
+
+2.
+Filter Button: Add a floating action button for filtering. Tapping it should open a small modal allowing users to toggle the visibility of different POI types.
+
+Final Quick Prompt for Replit
+
+
+"Build the 'Explore Nearby' screen using react-native-maps. Center the map on Buda, TX (30.0658, -97.7745). The main feature is the Balcones Escarpment - draw it on the map as a thick, orange <Polyline> using a mock array of coordinates. Add tappable <Marker>s for nearby Points of Interest (POIs) like 'Austin Chalk Outcrop' and 'Onion Creek Fossil Bed'. Create custom marker icons for different POI types (Fossil Site, Rock Outcrop). When a marker is tapped, show an information card at the bottom of the screen with the POI's name, type, and distance. Finally, add a non-functional search bar at the top and a filter button on the map."
+
