@@ -15,10 +15,10 @@ This guide explains how to develop GeoID Pro in GitHub Codespaces.
    
    Required secrets:
    - `DATABASE_URL` - PostgreSQL connection string for Drizzle ORM
-   - `SUPABASE_URL` - Your Supabase project URL
-   - `SUPABASE_ANON_KEY` - Your Supabase anonymous/public key
-   - `OPENAI_API_KEY` - OpenAI API key for rock identification
-   - `GOOGLE_MAPS_API_KEY` - Google Maps API key for location features
+   - `EXPO_PUBLIC_SUPABASE_URL` - Your Supabase project URL (client-side)
+   - `EXPO_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous/public key (client-side)
+   - `OPENAI_API_KEY` - OpenAI API key for rock identification (server-side)
+   - `GOOGLE_MAPS_API_KEY` - Google Maps API key for location features (server-side)
    
    To add secrets:
    - Go to your repository Settings → Secrets and variables → Codespaces
